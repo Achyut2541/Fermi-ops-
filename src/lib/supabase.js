@@ -22,8 +22,15 @@ export const supabaseAuth = {
       const data = await res.json();
       if (!res.ok) return { data: null, error: data.error_description || data.msg || 'Login failed' };
       return { data, error: null };
-    } catch {
-      return { data: null, error: 'Network error — could not reach auth server' };
+    } catch (e) {
+      console.error('Auth error:', e);
+      const isMissing = !SUPABASE_URL || SUPABASE_URL === 'undefined';
+      return { 
+        data: null, 
+        error: isMissing 
+          ? 'Supabase URL is missing or "undefined" in Vercel settings.' 
+          : `Network error: could not reach ${SUPABASE_URL}`
+      };
     }
   },
 
@@ -59,8 +66,13 @@ export const supabaseAuth = {
       });
       if (!res.ok) return { error: 'Failed to send reset email' };
       return { error: null };
-    } catch {
-      return { error: 'Network error — could not reach auth server' };
+    } catch (e) {
+      const isMissing = !SUPABASE_URL || SUPABASE_URL === 'undefined';
+      return { 
+        error: isMissing 
+          ? 'Supabase URL missing — check Vercel settings' 
+          : 'Network error — could not reach auth server' 
+      };
     }
   },
 
@@ -74,9 +86,24 @@ export const supabaseAuth = {
       const data = await res.json();
       if (!res.ok) return { data: null, error: data.error_description || data.msg || 'Sign up failed' };
       return { data, error: null };
-    } catch {
-      return { data: null, error: 'Network error — could not reach auth server' };
+    } catch (e) {
+      const isMissing = !SUPABASE_URL || SUPABASE_URL === 'undefined';
+      return { 
+        data: null, 
+        error: isMissing 
+          ? 'Supabase URL missing — check Vercel settings' 
+          : 'Network error — could not reach auth server' 
+      };
     }
+  },
+
+  signInWithProvider: (provider) => {
+    if (!SUPABASE_URL) {
+      console.error('Supabase URL missing — cannot redirect');
+      return { error: 'Supabase configuration missing' };
+    }
+    const redirectUrl = `${window.location.origin}`;
+    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
   },
 };
 

@@ -12,6 +12,31 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const restore = async () => {
+      // 1. Check for OAuth callback hash first
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const hashToken = params.get('access_token');
+      
+      if (hashToken) {
+        try {
+          const user = await supabaseAuth.getUser(hashToken);
+          if (user?.email) {
+            setAuthToken(hashToken);
+            setAuthEmail(user.email);
+            setIsLoggedIn(true);
+            localStorage.setItem('sk_auth_token', hashToken);
+            localStorage.setItem('sk_auth_email', user.email);
+            // Clean URL hash but keep history clean
+            window.history.replaceState(null, null, window.location.pathname);
+            setAuthChecked(true);
+            return;
+          }
+        } catch (e) {
+          console.error('OAuth restore failed:', e);
+        }
+      }
+
+      // 2. Fallback to LocalStorage
       const token = localStorage.getItem('sk_auth_token');
       const email = localStorage.getItem('sk_auth_email');
       if (token && email) {
@@ -32,6 +57,10 @@ export function AuthProvider({ children }) {
       setAuthChecked(true);
     };
     restore();
+  }, []);
+
+  const loginWithProvider = useCallback((provider) => {
+    supabaseAuth.signInWithProvider(provider);
   }, []);
 
   const login = useCallback(async (email, password) => {
@@ -79,7 +108,7 @@ export function AuthProvider({ children }) {
       authToken, isLoggedIn, authChecked,
       currentUser, setCurrentUser,
       authEmail,                   // FIX P0-1: expose so DataContext can resolve name
-      login, signup, logout, resetPassword,
+      login, signup, logout, resetPassword, loginWithProvider,
     }}>
       {children}
     </AuthContext.Provider>

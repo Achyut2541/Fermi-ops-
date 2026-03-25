@@ -36,8 +36,9 @@ function DataGate({ children }) {
   const { dataLoaded, currentUser } = useData();
   const { authEmail } = useAuth();
 
-  // Show spinner until Supabase has loaded AND currentUser has been resolved from email
-  const ready = dataLoaded && (currentUser || !authEmail);
+  // Show spinner until Supabase has loaded. 
+  // We no longer block on currentUser resolution so "New" users can still see the UI.
+  const ready = dataLoaded;
 
   if (!ready) {
     return (

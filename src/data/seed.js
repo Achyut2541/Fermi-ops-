@@ -18,7 +18,7 @@ export const SEED_TEAM = [
   { id: 'tm-11', name: 'Prashant',    email: 'prashant@spacekayak.xyz',  role: 'Developer',         type: 'dev',    maxProjects: 2, sysRole: 'team_member', active: true },
   { id: 'tm-12', name: 'Sumit Yadav', email: 'sumit@spacekayak.xyz',     role: 'Developer',         type: 'dev',    maxProjects: 3, sysRole: 'team_member', active: true },
   { id: 'tm-13', name: 'Ayan',        email: 'ayan@spacekayak.xyz',      role: 'Developer',         type: 'dev',    maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-14', name: 'Achyut',      email: 'pixel@spacekayak.xyz',     role: 'Account Manager',   type: 'am',         maxProjects: 3, sysRole: 'admin',      active: true },
+  { id: 'tm-14', name: 'Achyut',      email: 'achyut@spacekayak.xyz',    role: 'Account Manager',   type: 'am',         maxProjects: 3, sysRole: 'admin',      active: true },
   { id: 'tm-15', name: 'Hari',        email: 'hari@spacekayak.xyz',      role: 'Account Manager',   type: 'am',         maxProjects: 3, sysRole: 'am',         active: true },
   { id: 'tm-16', name: 'Neel',        email: 'neel@spacekayak.xyz',      role: 'Account Manager',   type: 'am',         maxProjects: 3, sysRole: 'am',         active: true },
   // FIX P1-1: leadership added as real team members so they can log in and are not hardcoded in DataContext
