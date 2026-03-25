@@ -22,7 +22,7 @@ export default function TeamView() {
   } = useData();
 
   const [newMember, setNewMember] = useState({ ...EMPTY_MEMBER });
-  const [confirmDeactivateId, setConfirmDeactivateId] = useState(null);
+  const [confirmingToggle, setConfirmingToggle] = useState(null); // member.id pending deactivate/reactivate confirm
 
   if (!canEditProjects(currentUser)) {
     return (
@@ -61,17 +61,12 @@ export default function TeamView() {
   };
 
   const toggleActive = (member) => {
-    if (!member.active) {
-      // reactivate: no confirm needed
-      setTeamMembers(teamMembers.map(m => m.id === member.id ? { ...m, active: true } : m));
+    if (confirmingToggle === member.id) {
+      setTeamMembers(teamMembers.map(m => m.id === member.id ? { ...m, active: !m.active } : m));
+      setConfirmingToggle(null);
     } else {
-      setConfirmDeactivateId(member.id);
+      setConfirmingToggle(member.id);
     }
-  };
-
-  const confirmDeactivate = (id) => {
-    setTeamMembers(teamMembers.map(m => m.id === id ? { ...m, active: false } : m));
-    setConfirmDeactivateId(null);
   };
 
   const closeMemberModal = () => {
@@ -111,59 +106,41 @@ export default function TeamView() {
                 const pct = wl ? capacityPct(wl) : 0;
                 const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-orange-400' : pct >= 40 ? 'bg-yellow-400' : 'bg-green-500';
                 return (
-                  <div key={member.id} className={`bg-white border rounded-[6px] transition-all ${confirmDeactivateId === member.id ? 'border-red-300 bg-red-50/40' : !member.active ? 'opacity-50 border-stone-200' : 'border-stone-200'}`}>
-                    {/* Deactivate confirmation banner */}
-                    {confirmDeactivateId === member.id && (
-                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-red-200">
-                        <div className="flex items-center gap-2 text-sm font-medium text-red-700">
-                          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                          Deactivate <span className="font-bold">{member.name}</span>?
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => confirmDeactivate(member.id)}
-                            className="px-3 py-1.5 bg-red-600 text-white text-xs font-mono font-medium rounded-[5px] hover:opacity-85 transition-opacity">
-                            Deactivate
-                          </button>
-                          <button onClick={() => setConfirmDeactivateId(null)}
-                            className="px-3 py-1.5 border border-stone-200 text-stone-600 text-xs font-medium rounded-[5px] hover:bg-stone-50 transition-colors">
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="p-4 flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${group.badgeColor}`}>
-                        {member.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`font-medium text-sm ${member.active ? 'text-stone-900' : 'text-stone-400'}`}>{member.name}</span>
-                          {!member.active && <span className="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-400 font-mono">Inactive</span>}
-                          <span className="text-xs text-stone-400 font-mono">{member.role}</span>
-                          {member.sysRole !== 'team_member' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-mono capitalize">{member.sysRole}</span>
-                          )}
-                        </div>
-                        {member.active && wl && (
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <div className="flex-1 h-1.5 bg-stone-200 rounded-full overflow-hidden">
-                              <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-                            </div>
-                            <span className="text-xs text-stone-400 w-20 flex-shrink-0 font-mono">{wl.activeTasks} tasks · {pct}%</span>
-                          </div>
+                  <div key={member.id} className={`bg-white border border-stone-200 rounded-[6px] p-4 flex items-center gap-4 ${!member.active ? 'opacity-50' : ''}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${group.badgeColor}`}>
+                      {member.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`font-medium text-sm ${member.active ? 'text-stone-900' : 'text-stone-400'}`}>{member.name}</span>
+                        {!member.active && <span className="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-400 font-mono">Inactive</span>}
+                        <span className="text-xs text-stone-400 font-mono">{member.role}</span>
+                        {member.sysRole !== 'team_member' && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-mono capitalize">{member.sysRole}</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button onClick={() => openEdit(member)} className="p-1.5 hover:bg-stone-100 rounded-[5px] transition-colors" title="Edit member">
-                          <Edit2 className="w-3.5 h-3.5 text-stone-400" />
-                        </button>
-                        <button
-                          onClick={() => toggleActive(member)}
-                          className={`px-2.5 py-1 rounded-[5px] transition-colors text-xs font-mono font-medium ${member.active ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
-                        >
-                          {member.active ? 'Deactivate' : 'Reactivate'}
-                        </button>
-                      </div>
+                      {member.active && wl && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex-1 h-1.5 bg-stone-200 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                          </div>
+                          <span className="text-xs text-stone-400 w-20 flex-shrink-0 font-mono">{wl.activeTasks} tasks · {pct}%</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => openEdit(member)} className="p-1.5 hover:bg-stone-100 rounded-[5px] transition-colors" title="Edit member">
+                        <Edit2 className="w-3.5 h-3.5 text-stone-400" />
+                      </button>
+                      <button
+                        onClick={() => toggleActive(member)}
+                        className={`px-2.5 py-1 rounded-[5px] transition-colors text-xs font-mono font-medium ${confirmingToggle === member.id ? 'bg-amber-50 text-amber-700 border border-amber-300' : member.active ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                      >
+                        {confirmingToggle === member.id ? 'Confirm?' : member.active ? 'Deactivate' : 'Reactivate'}
+                      </button>
+                      {confirmingToggle === member.id && (
+                        <button onClick={() => setConfirmingToggle(null)} className="p-1.5 hover:bg-stone-100 rounded-[5px] transition-colors text-xs text-stone-400 font-mono">✕</button>
+                      )}
                     </div>
                   </div>
                 );

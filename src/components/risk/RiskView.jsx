@@ -97,32 +97,30 @@ export default function RiskView() {
                       {canEdit && task.reassignment && task.reassignment.suggestions.length > 0 && (
                         <div className="mt-3 bg-green-50 border border-green-200 rounded-[5px] p-3">
                           <div className="text-xs font-mono font-medium text-green-700 mb-2">Reassignment suggestions:</div>
-                          {confirmReassign?.taskId === task.id && (
-                            <div className="flex items-center justify-between mb-2 p-2 bg-white border border-green-300 rounded-[5px]">
-                              <span className="text-xs font-medium text-stone-700">Reassign to <span className="font-bold text-green-800">{confirmReassign.name}</span>?</span>
-                              <div className="flex gap-1.5">
-                                <button onClick={() => { updateTask(task.id, { assignedTo: [confirmReassign.name] }); setConfirmReassign(null); }}
-                                  className="px-2.5 py-1 bg-green-600 text-white text-xs font-mono font-medium rounded-[5px] hover:opacity-85 transition-opacity">
-                                  Confirm
+                          <div className="flex gap-2 flex-wrap">
+                            {task.reassignment.suggestions.slice(0, 3).map((sug, idx) => {
+                              const isPending = confirmReassign?.taskId === task.id && confirmReassign?.name === sug.name;
+                              return (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    if (isPending) {
+                                      updateTask(task.id, { assignedTo: [sug.name] });
+                                      setConfirmReassign(null);
+                                    } else {
+                                      setConfirmReassign({ taskId: task.id, name: sug.name });
+                                    }
+                                  }}
+                                  className={`text-xs px-3 py-1.5 rounded-[5px] transition-colors border ${isPending ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-white border-green-200 hover:bg-green-50'}`}
+                                >
+                                  <div className="font-medium">{isPending ? `Confirm → ${sug.name}?` : sug.name}</div>
+                                  {!isPending && <div className="text-green-600 font-mono">{sug.currentTasks} tasks · {sug.capacity}%</div>}
                                 </button>
-                                <button onClick={() => setConfirmReassign(null)}
-                                  className="px-2.5 py-1 border border-stone-200 text-stone-500 text-xs font-medium rounded-[5px] hover:bg-stone-50 transition-colors">
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex gap-2">
-                            {task.reassignment.suggestions.slice(0, 3).map((sug, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => setConfirmReassign({ taskId: task.id, name: sug.name })}
-                                className={`text-xs bg-white border px-3 py-1.5 rounded-[5px] transition-colors ${confirmReassign?.taskId === task.id && confirmReassign?.name === sug.name ? 'border-green-500 ring-1 ring-green-400' : 'border-green-200 hover:bg-green-50'}`}
-                              >
-                                <div className="font-medium text-green-900">{sug.name}</div>
-                                <div className="text-green-600 font-mono">{sug.currentTasks} tasks · {sug.capacity}%</div>
-                              </button>
-                            ))}
+                              );
+                            })}
+                            {confirmReassign?.taskId === task.id && (
+                              <button onClick={() => setConfirmReassign(null)} className="text-xs px-2 py-1.5 text-stone-400 hover:text-stone-600 font-mono">✕ cancel</button>
+                            )}
                           </div>
                         </div>
                       )}

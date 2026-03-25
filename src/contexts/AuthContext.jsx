@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
     if (error) return { error };
     if (data?.access_token) {
       setAuthToken(data.access_token);
-      setAuthEmail(email);           // resolve currentUser from team members immediately
+      setAuthEmail(email);           // FIX P0-1: set email so DataContext resolves the name after auto-confirm signup
       setIsLoggedIn(true);
       localStorage.setItem('sk_auth_token', data.access_token);
       localStorage.setItem('sk_auth_email', email);

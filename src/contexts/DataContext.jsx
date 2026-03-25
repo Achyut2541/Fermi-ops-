@@ -267,8 +267,7 @@ export function DataProvider({ children }) {
     const task = tasks.find(t => t.id === id);
     if (!task) return { needsHoursLog: false, needsDelayLog: false };
 
-    if (updates.status === 'client-delay' && task.clientDelayDays === 0) return { needsDelayLog: true };
-    // allow skip (manualStatus: true) to bypass the hours prompt
+    if (updates.status === 'client-delay' && task.clientDelayDays === 0 && !updates.manualStatus) return { needsDelayLog: true };
     if (updates.status === 'completed' && !task.actualHours && !updates.manualStatus) return { needsHoursLog: true };
 
     const extra = updates.status !== undefined ? { manualStatus: true } : {};

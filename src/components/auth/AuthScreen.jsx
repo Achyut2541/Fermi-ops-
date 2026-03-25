@@ -24,7 +24,7 @@ export default function AuthScreen() {
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  const [resetMessage, setResetMessage] = useState(null); // { text, isError } | null
+  const [resetMessage, setResetMessage] = useState(null); // { text, isError }
 
   const inputClass = "w-full px-4 py-2.5 text-sm border border-stone-200 rounded-[5px] focus:border-indigo-500 focus:outline-none transition-all bg-white";
 
@@ -72,7 +72,7 @@ export default function AuthScreen() {
     setLoginError('');
     setSignupError('');
     setShowForgotPassword(false);
-    setResetMessage('');
+    setResetMessage(null);
   };
 
   return (
@@ -178,11 +178,14 @@ export default function AuthScreen() {
                     onClick={async () => {
                       if (!resetEmail) return;
                       if (!resetEmail.endsWith('@spacekayak.xyz')) {
-                        setResetMessage('Only @spacekayak.xyz emails are allowed');
+                        setResetMessage({ text: 'Only @spacekayak.xyz emails are allowed', isError: true });
                         return;
                       }
                       const result = await resetPassword(resetEmail);
-                      setResetMessage(result.error ? { text: result.error, isError: true } : { text: 'Check your email for a reset link.', isError: false });
+                      setResetMessage(result.error
+                        ? { text: result.error, isError: true }
+                        : { text: 'Check your email for a reset link.', isError: false }
+                      );
                     }}
                     disabled={!resetEmail}
                     className="w-full py-2 px-4 bg-stone-800 text-white text-sm font-mono font-medium rounded-[5px] hover:opacity-85 disabled:opacity-40 transition-opacity"
@@ -190,7 +193,9 @@ export default function AuthScreen() {
                     Send Reset Link
                   </button>
                   {resetMessage && (
-                    <p className={`text-xs font-mono ${resetMessage.isError ? 'text-red-600' : 'text-green-700'}`}>{resetMessage.text}</p>
+                    <p className={`text-xs font-mono ${resetMessage.isError ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {resetMessage.text}
+                    </p>
                   )}
                 </div>
               )}

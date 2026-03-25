@@ -307,8 +307,8 @@ export default function DashboardView() {
                     <select value={task.status} onChange={e => {
                         e.stopPropagation();
                         const result = updateTask(task.id, { status: e.target.value });
-                        if (result?.needsHoursLog) setLoggingHoursTask(task.id);
                         if (result?.needsDelayLog) setClientDelayTask(task.id);
+                        if (result?.needsHoursLog) setLoggingHoursTask(task.id);
                       }}
                       onClick={e => e.stopPropagation()}
                       className="text-xs border border-stone-200 rounded-[5px] px-2 py-1 bg-white focus:outline-none focus:border-indigo-400 flex-shrink-0 font-mono">

@@ -11,7 +11,8 @@ export default function CapacityView() {
     weekView, setWeekView,
     expandedMember, setExpandedMember,
     reassigningTask, setReassigningTask,
-    setWorkloadWarning, setLoggingHoursTask,
+    setWorkloadWarning,
+    setLoggingHoursTask, setClientDelayTask,
   } = useUI();
   const {
     projects, getWorkload, capacityPct, capacityLabel,
@@ -249,6 +250,7 @@ export default function CapacityView() {
                                 <button onClick={() => {
                                     const result = updateTask(t.id, { status: 'completed' });
                                     if (result?.needsHoursLog) setLoggingHoursTask(t.id);
+                                    if (result?.needsDelayLog) setClientDelayTask(t.id);
                                   }}
                                   className="mt-0.5 flex-shrink-0" title="Mark complete">
                                   <Circle className="w-4 h-4 text-stone-300 hover:text-green-500 transition-colors" />
