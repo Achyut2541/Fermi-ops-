@@ -33,8 +33,8 @@ function TabRouter() {
 
 // FIX P1-3: gate content on dataLoaded so users never see a stale seed flash
 function DataGate({ children }) {
-  const { dataLoaded, currentUser } = useData();
-  const { authEmail } = useAuth();
+  const { dataLoaded } = useData();
+  const { authEmail, currentUser } = useAuth();   // currentUser lives in AuthContext, not DataContext
 
   // Show spinner until Supabase has loaded AND currentUser has been resolved from email
   const ready = dataLoaded && (currentUser || !authEmail);

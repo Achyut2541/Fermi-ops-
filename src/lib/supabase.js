@@ -81,13 +81,17 @@ export const supabaseAuth = {
 };
 
 // ── Minimal REST client ──────────────────────────────────────────────────
+// getAuthBearer() returns the stored user JWT so RLS policies are satisfied.
+// Falls back to the anon key for unauthenticated / public table access.
+const getAuthBearer = () =>
+  localStorage.getItem('sk_auth_token') || SUPABASE_KEY;
 
 export const supabase = {
   from: (table) => ({
     select: () => ({
       then: async (resolve) => {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
-          headers: { 'apikey': SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+          headers: { 'apikey': SUPABASE_KEY, Authorization: `Bearer ${getAuthBearer()}` },
         });
         const data = res.ok ? await res.json() : [];
         resolve({ data, error: res.ok ? null : 'Error loading' });
@@ -100,7 +104,7 @@ export const supabase = {
             method: 'POST',
             headers: {
               'apikey': SUPABASE_KEY,
-              Authorization: `Bearer ${SUPABASE_KEY}`,
+              Authorization: `Bearer ${getAuthBearer()}`,
               'Content-Type': 'application/json',
               Prefer: 'return=representation,resolution=merge-duplicates',
             },
@@ -115,7 +119,7 @@ export const supabase = {
         then: async (resolve) => {
           await fetch(`${SUPABASE_URL}/rest/v1/${table}?${col}=eq.${val}`, {
             method: 'DELETE',
-            headers: { 'apikey': SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+            headers: { 'apikey': SUPABASE_KEY, Authorization: `Bearer ${getAuthBearer()}` },
           });
           resolve({ error: null });
         },

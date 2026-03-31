@@ -62,8 +62,11 @@ export function DataProvider({ children }) {
   useEffect(() => {
     if (!dataLoaded || !authEmail) return;
     const matched = teamMembers.find(m => m.email === authEmail);
-    if (matched && matched.name !== currentUser) {
-      setCurrentUser(matched.name);
+    if (matched) {
+      if (matched.name !== currentUser) setCurrentUser(matched.name);
+    } else if (!currentUser) {
+      // Email not in team roster — fallback so DataGate never hangs
+      setCurrentUser(authEmail.split('@')[0]);
     }
   }, [dataLoaded, authEmail, teamMembers, currentUser, setCurrentUser]);
 
