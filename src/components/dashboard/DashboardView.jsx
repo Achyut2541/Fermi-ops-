@@ -132,7 +132,7 @@ export default function DashboardView() {
     // FIX P2: stat cards now have onClick drill-downs
     const statsData = [
       {
-        label: 'Active Projects', value: myProjects.filter(p => !p.archived).length,
+        label: 'Active Projects', value: myProjects.filter(p => !p.archived && p.phase !== 'Complete').length,
         sub: atRiskProjects.length > 0 ? `${atRiskProjects.length} need attention` : 'All looking good',
         valueColor: 'text-stone-900', subColor: atRiskProjects.length > 0 ? 'text-orange-600' : 'text-green-600',
         onClick: () => setActiveTab('projects'),
@@ -151,7 +151,11 @@ export default function DashboardView() {
       },
       {
         label: 'Team Overloaded', value: overloadedMembers.length,
-        sub: overloadedMembers.length > 0 ? overloadedMembers.slice(0, 2).map(m => m.name).join(', ') : 'Everyone in good shape',
+        sub: overloadedMembers.length > 0
+          ? overloadedMembers.length <= 3
+            ? overloadedMembers.map(m => m.name).join(', ')
+            : overloadedMembers.slice(0, 2).map(m => m.name).join(', ') + ` +${overloadedMembers.length - 2} more`
+          : 'Everyone in good shape',
         valueColor: overloadedMembers.length > 0 ? 'text-orange-600' : 'text-stone-900',
         subColor: overloadedMembers.length > 0 ? 'text-orange-500' : 'text-green-600',
         onClick: () => setActiveTab('capacity'),

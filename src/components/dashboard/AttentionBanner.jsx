@@ -39,7 +39,7 @@ export default function AttentionBanner({ overdueTasks, overloadedMembers, proje
             </div>
           );
         })}
-        {overloadedMembers.slice(0, 2).map(m => (
+        {overloadedMembers.map(m => (
           <div key={m.name} className="flex items-center gap-2 text-sm">
             <span className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" />
             <span className="font-medium text-stone-900">{m.name}</span>
