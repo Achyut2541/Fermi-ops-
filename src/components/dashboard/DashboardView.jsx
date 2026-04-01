@@ -62,7 +62,11 @@ export default function DashboardView() {
       const a = Array.isArray(t.assignedTo) ? t.assignedTo : [t.assignedTo];
       return a.includes(effectiveUser);
     }).map(t => t.projectId));
-    myProjects = projects.filter(p => myTaskProjectIds.has(p.id) && (showArchived || !p.archived));
+    myProjects = projects.filter(p =>
+      myTaskProjectIds.has(p.id) &&
+      (showArchived || !p.archived) &&
+      p.phase !== 'Complete'   // don't show completed projects in team member "Your Projects"
+    );
   } else {
     myProjects = projects.filter(p => showArchived || !p.archived);
   }
