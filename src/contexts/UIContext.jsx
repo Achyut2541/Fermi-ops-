@@ -1,8 +1,10 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 const UIContext = createContext(null);
 
 export function UIProvider({ children }) {
+  const { authEmail } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [appToast, setAppToast] = useState(null);
   const toastTimer = useRef(null);
@@ -12,6 +14,11 @@ export function UIProvider({ children }) {
     toastTimer.current = setTimeout(() => setAppToast(null), 3000);
   }, []);
   const [viewingAs, setViewingAs] = useState(null);
+
+  // Reset "View As" whenever the logged-in user changes (login / logout)
+  useEffect(() => {
+    setViewingAs(null);
+  }, [authEmail]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByPerson, setFilterByPerson] = useState('');
   const [showArchived, setShowArchived] = useState(false);
