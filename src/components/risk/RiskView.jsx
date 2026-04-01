@@ -131,6 +131,11 @@ export default function RiskView() {
                 </div>
               );
             })}
+            {highRiskTasks.length > 10 && (
+              <p className="text-xs text-stone-400 font-mono text-center pt-1">
+                +{highRiskTasks.length - 10} more at-risk tasks — use task filters to see all
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -148,6 +153,11 @@ export default function RiskView() {
                 </div>
               </div>
             ))}
+            {blockedTasks.length > 10 && (
+              <p className="text-xs text-stone-400 font-mono text-center pt-1">
+                +{blockedTasks.length - 10} more blocked tasks
+              </p>
+            )}
           </div>
         </div>
       )}

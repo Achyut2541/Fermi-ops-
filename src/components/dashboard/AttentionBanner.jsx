@@ -1,6 +1,6 @@
 import { AlertCircle } from 'lucide-react';
 
-export default function AttentionBanner({ overdueTasks, overloadedMembers, projects, capacityPct }) {
+export default function AttentionBanner({ overdueTasks, overloadedMembers, projects, capacityPct, onReassign, onSnooze }) {
   if (overdueTasks.length === 0 && overloadedMembers.length === 0) return null;
 
   return (
@@ -14,28 +14,34 @@ export default function AttentionBanner({ overdueTasks, overloadedMembers, proje
           const proj = projects.find(p => p.id === task.projectId);
           return (
             <div key={task.id} className="flex items-center justify-between text-sm group">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                <span className="font-medium text-stone-900">{task.title}</span>
-                {proj && <span className="text-stone-400">— {proj.name}</span>}
+                <span className="font-medium text-stone-900 truncate">{task.title}</span>
+                {proj && <span className="text-stone-400 flex-shrink-0">— {proj.name}</span>}
               </div>
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => console.log('Reassign task:', task.id)}
-                  className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-600 hover:text-indigo-800"
-                >
-                  Reassign
-                </button>
-                <button 
-                  onClick={() => console.log('Snooze task:', task.id)}
-                  className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-400 hover:text-stone-600"
-                >
-                  Snooze
-                </button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-xs text-stone-400 font-mono group-hover:hidden">
+                  {Array.isArray(task.assignedTo) ? task.assignedTo.join(', ') : task.assignedTo}
+                </span>
+                <div className="hidden group-hover:flex items-center gap-2">
+                  {onReassign && (
+                    <button
+                      onClick={() => onReassign(task)}
+                      className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-600 hover:text-indigo-800 transition-colors"
+                    >
+                      Reassign
+                    </button>
+                  )}
+                  {onSnooze && (
+                    <button
+                      onClick={() => onSnooze(task)}
+                      className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-400 hover:text-stone-600 transition-colors"
+                    >
+                      Delay
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className="text-xs text-stone-400 font-mono ml-3 group-hover:hidden">
-                {Array.isArray(task.assignedTo) ? task.assignedTo.join(', ') : task.assignedTo}
-              </span>
             </div>
           );
         })}

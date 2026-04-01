@@ -364,6 +364,28 @@ html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.15); }
 html.dark .bg-indigo-50 { background-color: #0D2820; }
 html.dark .bg-teal-50   { background-color: #0D2820; }
 
+/* Opacity variants of white backgrounds */
+html.dark .bg-white\/40 { background-color: rgba(28, 28, 35, 0.4); }
+
+/* Status colors with opacity modifiers */
+html.dark .bg-orange-50\/60 { background-color: rgba(154, 52, 18, 0.12); }
+html.dark .bg-red-50\/60    { background-color: rgba(153, 27, 27, 0.12); }
+html.dark .bg-amber-50\/60  { background-color: rgba(120, 53, 15, 0.12); }
+
+/* Green (used in reassignment suggestions in RiskView) */
+html.dark .bg-green-50  { background-color: rgba(6, 78, 59, 0.2); }
+html.dark .bg-green-100 { background-color: rgba(6, 78, 59, 0.3); }
+
+/* Purple / pink / cyan — phase badge backgrounds */
+html.dark .bg-purple-100  { background-color: rgba(88, 28, 135, 0.2); }
+html.dark .bg-pink-100    { background-color: rgba(131, 24, 67, 0.2); }
+html.dark .bg-cyan-100    { background-color: rgba(14, 116, 144, 0.2); }
+html.dark .bg-teal-100    { background-color: rgba(15, 118, 110, 0.2); }
+
+/* Gray badge (Completed phase) */
+html.dark .bg-gray-100 { background-color: #27272F; }
+html.dark .bg-gray-200 { background-color: #36363F; }
+
 /* Dark mode scrollbar */
 html.dark ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);

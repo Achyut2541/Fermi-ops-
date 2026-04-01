@@ -32,7 +32,7 @@ export default function DashboardView() {
     filterByPerson, setFilterByPerson,
     expandedProjects, toggleExpandProject,
     setEditingProject, setActiveTab, setSelectedProject, setTaskFilter,
-    setLoggingHoursTask, setClientDelayTask,
+    setLoggingHoursTask, setClientDelayTask, setReassigningTask,
   } = useUI();
   const {
     projects, setProjects, tasks, tasksWithStatus, getWorkload, capacityPct,
@@ -48,7 +48,7 @@ export default function DashboardView() {
 
   const getProjectHealth = (project) => {
     const pTasks = tasksWithStatus.filter(t => t.projectId === project.id);
-    const overdueCount = pTasks.filter(t => t.status === 'delayed' && t.status !== 'completed').length;
+    const overdueCount = pTasks.filter(t => t.status === 'delayed').length;
     const daysLeft = Math.ceil((new Date(project.decidedEndDate || project.endDate) - today) / 86400000);
     if (project.phase === 'Complete' || project.status === 'completed') return { label: 'Completed', color: 'bg-gray-100 text-stone-500', dot: 'bg-gray-400' };
     if (overdueCount >= 2 || daysLeft < 0) return { label: 'At Risk', color: 'bg-red-50 text-red-700', dot: 'bg-red-500' };
@@ -193,6 +193,8 @@ export default function DashboardView() {
           overloadedMembers={overloadedMembers}
           projects={projects}
           capacityPct={capacityPct}
+          onReassign={(task) => setReassigningTask(task)}
+          onSnooze={(task) => setClientDelayTask(task)}
         />
 
         {/* Portfolio Health */}

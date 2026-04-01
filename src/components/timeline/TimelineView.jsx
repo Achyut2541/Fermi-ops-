@@ -113,7 +113,7 @@ export default function TimelineView() {
                   {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
                 <div className="space-y-1">
-                  {allTeamNames.slice(0, 8).map(member => {
+                  {allTeamNames.map(member => {
                     const memberTasks = tasks.filter(t => {
                       const dueDate = new Date(t.dueDate);
                       const assignees = Array.isArray(t.assignedTo) ? t.assignedTo : [t.assignedTo];
