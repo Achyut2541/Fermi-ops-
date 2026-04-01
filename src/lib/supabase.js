@@ -78,6 +78,14 @@ export const supabaseAuth = {
       return { data: null, error: 'Network error — could not reach auth server' };
     }
   },
+
+  // ── Google OAuth — redirects to Google via Supabase ──────────────────────
+  // Requires: Google provider enabled in Supabase Dashboard → Auth → Providers
+  signInWithGoogle: () => {
+    const redirectTo = window.location.origin;
+    const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+    window.location.href = url;
+  },
 };
 
 // ── Minimal REST client ──────────────────────────────────────────────────

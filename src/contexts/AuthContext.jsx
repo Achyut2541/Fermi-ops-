@@ -1,6 +1,15 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabaseAuth } from '../lib/supabase';
 
+// Parse Supabase OAuth redirect hash (access_token=...&refresh_token=...&...)
+function parseOAuthHash() {
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('access_token=')) return null;
+  const params = new URLSearchParams(hash.slice(1));
+  const token = params.get('access_token');
+  return token || null;
+}
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -12,6 +21,28 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const restore = async () => {
+      // ── Handle Google OAuth redirect (hash contains access_token) ──────────
+      const oauthToken = parseOAuthHash();
+      if (oauthToken) {
+        try {
+          const user = await supabaseAuth.getUser(oauthToken);
+          if (user?.email) {
+            setAuthToken(oauthToken);
+            setAuthEmail(user.email);
+            setIsLoggedIn(true);
+            localStorage.setItem('sk_auth_token', oauthToken);
+            localStorage.setItem('sk_auth_email', user.email);
+            // Clean up URL so the token doesn't stay in the bar
+            window.history.replaceState(null, '', window.location.pathname);
+            setAuthChecked(true);
+            return;
+          }
+        } catch {
+          /* fall through to normal restore */
+        }
+      }
+
+      // ── Normal session restore from localStorage ──────────────────────────
       const token = localStorage.getItem('sk_auth_token');
       const email = localStorage.getItem('sk_auth_email');
       if (token && email) {
@@ -64,6 +95,10 @@ export function AuthProvider({ children }) {
     return { success: true };
   }, []);
 
+  const loginWithGoogle = useCallback(() => {
+    supabaseAuth.signInWithGoogle();
+  }, []);
+
   const logout = useCallback(async () => {
     if (authToken) await supabaseAuth.signOut(authToken);
     setAuthToken(null);
@@ -79,7 +114,7 @@ export function AuthProvider({ children }) {
       authToken, isLoggedIn, authChecked,
       currentUser, setCurrentUser,
       authEmail,                   // FIX P0-1: expose so DataContext can resolve name
-      login, signup, logout, resetPassword,
+      login, signup, logout, resetPassword, loginWithGoogle,
     }}>
       {children}
     </AuthContext.Provider>

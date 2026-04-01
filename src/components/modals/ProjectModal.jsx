@@ -3,7 +3,7 @@ import { Plus, X } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { PROJECT_TEMPLATES as projectTemplates } from '../../data/templates';
 
-// ── Pill-based team member picker ─────────────────────────────────────────
+// ── Pill-based team member picker with suggestive layer ───────────────────
 function TeamPicker({ label, team, selectedKey, data, setData, pillCls, rowAccentCls }) {
   const { getWorkload, capacityPct, capacityLabel } = useData();
   const selected = data.team?.[selectedKey] || [];
@@ -16,9 +16,32 @@ function TeamPicker({ label, team, selectedKey, data, setData, pillCls, rowAccen
     setData({ ...data, team: { ...data.team, [selectedKey]: next } });
   };
 
+  // Build sorted + annotated list of unselected members
+  const available = team
+    .filter(p => !selected.includes(p))
+    .map(p => {
+      const wl = workloads.find(w => w.name === p);
+      const pct = wl ? capacityPct(wl) : 0;
+      return { name: p, wl, pct };
+    })
+    .sort((a, b) => a.pct - b.pct); // least loaded first
+
+  // "Best pick" = top members with pct < 70% and no delayed tasks
+  const bestPickNames = new Set(
+    available
+      .filter(m => m.pct < 70 && !(m.wl?.delayedTasks > 0))
+      .slice(0, 2)
+      .map(m => m.name)
+  );
+
   return (
     <div>
-      <label className="block text-xs font-mono font-medium text-stone-500 uppercase tracking-wider mb-2">{label}</label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-xs font-mono font-medium text-stone-500 uppercase tracking-wider">{label}</label>
+        {available.length > 0 && (
+          <span className="text-[9px] font-mono text-stone-400 uppercase tracking-wider">↑ by availability</span>
+        )}
+      </div>
 
       {/* Selected pills */}
       {selected.length > 0 && (
@@ -34,32 +57,54 @@ function TeamPicker({ label, team, selectedKey, data, setData, pillCls, rowAccen
         </div>
       )}
 
-      {/* Picker list */}
-      <div className="border border-stone-200 rounded-[6px] overflow-hidden max-h-[148px] overflow-y-auto">
-        {team.filter(p => !selected.includes(p)).length === 0 ? (
+      {/* Picker list — sorted by capacity */}
+      <div className="border border-stone-200 rounded-[6px] overflow-hidden max-h-[172px] overflow-y-auto">
+        {available.length === 0 ? (
           <div className="px-3 py-3 text-xs text-stone-400 text-center font-mono">All assigned</div>
-        ) : team.filter(p => !selected.includes(p)).map(person => {
-          const wl = workloads.find(w => w.name === person);
-          const pct = wl ? capacityPct(wl) : 0;
+        ) : available.map(({ name: person, wl, pct }, idx) => {
           const cl = capacityLabel(pct);
           const hasIssues = wl && (wl.delayedTasks > 0 || pct >= 100);
+          const isBestPick = bestPickNames.has(person);
+          const showSuggestedDivider = idx === 0 && isBestPick;
+          const showOthersDivider = !isBestPick && idx > 0 && bestPickNames.has(available[idx - 1]?.name);
+
           return (
-            <button key={person} onClick={() => toggle(person)}
-              className={`w-full text-left px-3 py-2 transition-colors border-b border-stone-100 last:border-0 ${rowAccentCls} ${hasIssues ? 'bg-orange-50' : ''}`}>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-stone-900">{person}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${cl.color}`}>{pct}%</span>
-              </div>
-              {wl && (
-                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-stone-400 font-mono">
-                  <span>{wl.projectCount}/{wl.maxProjects} proj</span>
-                  <span>·</span>
-                  <span>{wl.activeTasks} tasks</span>
-                  {wl.estimatedHours > 0 && <><span>·</span><span>{wl.estimatedHours}h</span></>}
-                  {wl.delayedTasks > 0 && <><span>·</span><span className="text-red-500 font-bold">{wl.delayedTasks} delayed</span></>}
+            <div key={person}>
+              {showSuggestedDivider && (
+                <div className="px-3 py-1 bg-accent-light/60 border-b border-accent-light flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent inline-block" />
+                  <span className="text-[9px] font-mono font-bold text-accent uppercase tracking-widest">Suggested</span>
                 </div>
               )}
-            </button>
+              {showOthersDivider && (
+                <div className="px-3 py-1 bg-stone-50 border-b border-stone-100 flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono font-bold text-stone-400 uppercase tracking-widest">Others</span>
+                </div>
+              )}
+              <button onClick={() => toggle(person)}
+                className={`w-full text-left px-3 py-2 transition-colors border-b border-stone-100 last:border-0 ${rowAccentCls} ${hasIssues ? 'bg-orange-50' : isBestPick ? 'bg-accent-light/20' : ''}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm font-medium text-stone-900 truncate">{person}</span>
+                    {isBestPick && (
+                      <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-accent text-white text-[8px] font-mono font-bold rounded-full uppercase tracking-wide">
+                        Best pick
+                      </span>
+                    )}
+                  </div>
+                  <span className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${cl.color}`}>{pct}%</span>
+                </div>
+                {wl && (
+                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-stone-400 font-mono">
+                    <span>{wl.projectCount}/{wl.maxProjects} proj</span>
+                    <span>·</span>
+                    <span>{wl.activeTasks} tasks</span>
+                    {wl.estimatedHours > 0 && <><span>·</span><span>{wl.estimatedHours}h</span></>}
+                    {wl.delayedTasks > 0 && <><span>·</span><span className="text-red-500 font-bold">{wl.delayedTasks} delayed</span></>}
+                  </div>
+                )}
+              </button>
+            </div>
           );
         })}
       </div>

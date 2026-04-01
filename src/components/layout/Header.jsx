@@ -1,13 +1,15 @@
-import { X, ChevronDown, AlertCircle, Menu } from 'lucide-react';
+import { X, ChevronDown, AlertCircle, Menu, Moon, Sun } from 'lucide-react';
 import { useUI } from '../../contexts/UIContext';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Avatar } from '../ui';
 
 export default function Header({ onMenuToggle }) {
   const { searchQuery, setSearchQuery, viewingAs, setViewingAs } = useUI();
   const { slackToast, accountManagers, allTeamNames, getUserRole, canViewAs } = useData();
   const { currentUser, setCurrentUser, logout } = useAuth();
+  const { isDark, toggle: toggleTheme } = useTheme();
 
   return (
     <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-200/60">
@@ -77,6 +79,15 @@ export default function Header({ onMenuToggle }) {
                 )}
               </div>
             )}
+
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="p-2 rounded-[5px] border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
 
             {/* Logout */}
             <button

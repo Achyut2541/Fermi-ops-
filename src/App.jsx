@@ -1,6 +1,7 @@
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider, useData } from './contexts/DataContext';
 import { UIProvider, useUI } from './contexts/UIContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import AppShell from './components/layout/AppShell';
 import AuthScreen from './components/auth/AuthScreen';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -85,8 +86,10 @@ function AuthGate() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AuthGate />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

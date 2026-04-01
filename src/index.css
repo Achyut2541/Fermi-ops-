@@ -259,3 +259,120 @@ button, a, [role="button"] {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dark Mode — Gravity Design System
+   Applied via html.dark class (ThemeContext)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html.dark {
+  color-scheme: dark;
+
+  /* Semantic tokens */
+  --color-bg: #0F0F13;
+  --color-surface: #17171C;
+  --color-card: #1C1C23;
+  --color-card-hover: #232330;
+  --color-text: #EDECE6;
+  --color-text-secondary: #8A8A96;
+  --color-text-faint: #58585F;
+  --color-accent: #3DA87A;
+  --color-accent-light: #0D2820;
+  --color-accent-dim: #0D2820;
+  --color-border: #27272F;
+  --color-border-light: #313138;
+
+  /* Stone palette — inverted for dark */
+  --color-stone-50:  #0F0F13;
+  --color-stone-100: #17171C;
+  --color-stone-200: #27272F;
+  --color-stone-300: #36363F;
+  --color-stone-400: #6B6B76;
+  --color-stone-500: #9A9AA6;
+  --color-stone-600: #B8B8C3;
+  --color-stone-700: #D0D0D9;
+  --color-stone-800: #E4E4EC;
+  --color-stone-900: #F0F0F6;
+  --color-stone-950: #F8F8FC;
+
+  /* Gray palette — same inversion */
+  --color-gray-50:  #0F0F13;
+  --color-gray-100: #17171C;
+  --color-gray-200: #27272F;
+  --color-gray-300: #36363F;
+  --color-gray-400: #6B6B76;
+  --color-gray-500: #9A9AA6;
+  --color-gray-600: #B8B8C3;
+  --color-gray-700: #D0D0D9;
+  --color-gray-800: #E4E4EC;
+  --color-gray-900: #F0F0F6;
+  --color-gray-950: #F8F8FC;
+
+  /* Indigo (accent green) — keep readable on dark */
+  --color-indigo-50:  #0D2820;
+  --color-indigo-100: #113523;
+  --color-indigo-200: #1A5038;
+  --color-indigo-300: #256B4D;
+  --color-indigo-400: #3DA87A;
+  --color-indigo-500: #3DA87A;
+  --color-indigo-600: #3DA87A;
+  --color-indigo-700: #5DBE93;
+  --color-indigo-800: #85D0AE;
+  --color-indigo-900: #B3E2CC;
+
+  /* Teal — same as indigo override */
+  --color-teal-50:  #0D2820;
+  --color-teal-100: #113523;
+  --color-teal-200: #1A5038;
+  --color-teal-300: #256B4D;
+  --color-teal-400: #3DA87A;
+  --color-teal-500: #3DA87A;
+  --color-teal-600: #3DA87A;
+}
+
+/* White-based backgrounds → dark equivalents */
+html.dark .bg-white {
+  background-color: #1C1C23;
+}
+html.dark .bg-white\/80 {
+  background-color: rgba(28, 28, 35, 0.85);
+}
+html.dark .bg-white\/60 {
+  background-color: rgba(28, 28, 35, 0.6);
+}
+
+/* Keep body background dark */
+html.dark body {
+  background-color: #0F0F13;
+  color: #EDECE6;
+}
+
+/* Borders that reference white */
+html.dark .border-white {
+  border-color: #27272F;
+}
+
+/* Orange/amber/red status bg — soften for dark */
+html.dark .bg-orange-50 { background-color: rgba(154, 52, 18, 0.15); }
+html.dark .bg-red-50    { background-color: rgba(153, 27, 27, 0.15); }
+html.dark .bg-amber-50  { background-color: rgba(120, 53, 15, 0.15); }
+html.dark .bg-emerald-50 { background-color: rgba(6, 78, 59, 0.2); }
+html.dark .bg-blue-50   { background-color: rgba(30, 58, 138, 0.15); }
+html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.15); }
+
+/* Accent-light override for dark */
+html.dark .bg-indigo-50 { background-color: #0D2820; }
+html.dark .bg-teal-50   { background-color: #0D2820; }
+
+/* Dark mode scrollbar */
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Backdrop & shadow */
+html.dark .shadow-lg {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
