@@ -13,9 +13,10 @@ export default function ProjectsView() {
     showAddProject, setShowAddProject, editingProject, setEditingProject,
     searchQuery, showToast,
   } = useUI();
-  const { projects, tasks, filteredTasks, delayedCount, addProject, updateProject, deleteProject, canEditProjects } = useData();
+  const { projects, tasks, filteredTasks, delayedCount, addProject, updateProject, deleteProject, canEditProjects, canViewAllProjects } = useData();
   const { currentUser } = useAuth();
   const canEdit = canEditProjects(currentUser);
+  const isManager = canViewAllProjects(currentUser);
 
   const [newProject, setNewProject] = useState({ ...EMPTY_PROJECT });
   const [customTasks, setCustomTasks] = useState([]);
@@ -23,8 +24,17 @@ export default function ProjectsView() {
 
   const currentProject = selectedProject ? projects.find(p => p.id === selectedProject) : null;
 
-  // Filter by search query
+  // Non-managers only see projects they have tasks on
+  const userProjectIds = isManager ? null : new Set(
+    tasks.filter(t => {
+      const a = Array.isArray(t.assignedTo) ? t.assignedTo : [t.assignedTo];
+      return a.includes(currentUser);
+    }).map(t => t.projectId)
+  );
+
+  // Filter by role visibility and search query
   const visibleProjects = projects.filter(p => {
+    if (!isManager && !userProjectIds.has(p.id)) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (

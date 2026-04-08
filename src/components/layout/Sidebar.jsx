@@ -34,8 +34,12 @@ export default function Sidebar({ onNavigate }) {
     return new Date(t.dueDate) < new Date() && t.status !== 'completed';
   }).length;
 
+  // Non-managers only count projects they have tasks on
+  const myProjectIds = isManager ? null : new Set(myTasks.map(t => t.projectId));
+  const myProjects = isManager ? projects : projects.filter(p => myProjectIds.has(p.id));
+
   const counts = {
-    projects: projects.length,
+    projects: myProjects.length,
     openTasks,
     team: activeMembers.length,
     delayed: delayedCount,
@@ -98,7 +102,7 @@ export default function Sidebar({ onNavigate }) {
         <div className="mx-3 mb-3 p-3 bg-white/60 rounded-[5px] space-y-2 text-xs border border-stone-200">
           <div className="flex justify-between items-center">
             <span className="text-stone-400 font-mono uppercase tracking-wide text-[0.6rem]">Active Projects</span>
-            <span className="font-semibold text-stone-700 font-mono">{projects.filter(p => p.phase !== 'Complete').length}</span>
+            <span className="font-semibold text-stone-700 font-mono">{myProjects.filter(p => p.phase !== 'Complete').length}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-stone-400 font-mono uppercase tracking-wide text-[0.6rem]">Open Tasks</span>
