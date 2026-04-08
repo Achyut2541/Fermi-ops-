@@ -22,8 +22,15 @@ export const supabaseAuth = {
       const data = await res.json();
       if (!res.ok) return { data: null, error: data.error_description || data.msg || 'Login failed' };
       return { data, error: null };
-    } catch {
-      return { data: null, error: 'Network error — could not reach auth server' };
+    } catch (e) {
+      console.error('Auth error:', e);
+      const isMissing = !SUPABASE_URL || SUPABASE_URL === 'undefined';
+      return { 
+        data: null, 
+        error: isMissing 
+          ? 'Supabase URL is missing or "undefined" in Vercel settings.' 
+          : `Network error: could not reach ${SUPABASE_URL}`
+      };
     }
   },
 
@@ -52,15 +59,21 @@ export const supabaseAuth = {
 
   recover: async (email) => {
     try {
+      const redirectUrl = import.meta.env.VITE_APP_URL || window.location.origin;
       const res = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
         method: 'POST',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, redirect_to: redirectUrl }),
       });
       if (!res.ok) return { error: 'Failed to send reset email' };
       return { error: null };
-    } catch {
-      return { error: 'Network error — could not reach auth server' };
+    } catch (e) {
+      const isMissing = !SUPABASE_URL || SUPABASE_URL === 'undefined';
+      return { 
+        error: isMissing 
+          ? 'Supabase URL missing — check Vercel settings' 
+          : 'Network error — could not reach auth server' 
+      };
     }
   },
 
@@ -74,32 +87,38 @@ export const supabaseAuth = {
       const data = await res.json();
       if (!res.ok) return { data: null, error: data.error_description || data.msg || 'Sign up failed' };
       return { data, error: null };
-    } catch {
-      return { data: null, error: 'Network error — could not reach auth server' };
+    } catch (e) {
+      const isMissing = !SUPABASE_URL || SUPABASE_URL === 'undefined';
+      return { 
+        data: null, 
+        error: isMissing 
+          ? 'Supabase URL missing — check Vercel settings' 
+          : 'Network error — could not reach auth server' 
+      };
     }
   },
 
-  // ── Google OAuth — redirects to Google via Supabase ──────────────────────
-  // Requires: Google provider enabled in Supabase Dashboard → Auth → Providers
-  signInWithGoogle: () => {
-    const redirectTo = window.location.origin;
-    const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
-    window.location.href = url;
+  signInWithProvider: (provider) => {
+    if (!SUPABASE_URL) {
+      console.error('Supabase URL missing — cannot redirect');
+      return { error: 'Supabase configuration missing' };
+    }
+    // Always redirect back to the production app URL.
+    // VITE_APP_URL must be set in Vercel env vars (e.g. https://fermi-ops.vercel.app).
+    // Falls back to window.location.origin for local dev.
+    const redirectUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
   },
 };
 
 // ── Minimal REST client ──────────────────────────────────────────────────
-// getAuthBearer() returns the stored user JWT so RLS policies are satisfied.
-// Falls back to the anon key for unauthenticated / public table access.
-const getAuthBearer = () =>
-  localStorage.getItem('sk_auth_token') || SUPABASE_KEY;
 
 export const supabase = {
   from: (table) => ({
     select: () => ({
       then: async (resolve) => {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
-          headers: { 'apikey': SUPABASE_KEY, Authorization: `Bearer ${getAuthBearer()}` },
+          headers: { 'apikey': SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
         });
         const data = res.ok ? await res.json() : [];
         resolve({ data, error: res.ok ? null : 'Error loading' });
@@ -112,7 +131,7 @@ export const supabase = {
             method: 'POST',
             headers: {
               'apikey': SUPABASE_KEY,
-              Authorization: `Bearer ${getAuthBearer()}`,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
               'Content-Type': 'application/json',
               Prefer: 'return=representation,resolution=merge-duplicates',
             },
@@ -127,7 +146,7 @@ export const supabase = {
         then: async (resolve) => {
           await fetch(`${SUPABASE_URL}/rest/v1/${table}?${col}=eq.${val}`, {
             method: 'DELETE',
-            headers: { 'apikey': SUPABASE_KEY, Authorization: `Bearer ${getAuthBearer()}` },
+            headers: { 'apikey': SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
           });
           resolve({ error: null });
         },

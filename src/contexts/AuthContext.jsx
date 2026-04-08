@@ -1,15 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabaseAuth } from '../lib/supabase';
 
-// Parse Supabase OAuth redirect hash (access_token=...&refresh_token=...&...)
-function parseOAuthHash() {
-  const hash = window.location.hash;
-  if (!hash || !hash.includes('access_token=')) return null;
-  const params = new URLSearchParams(hash.slice(1));
-  const token = params.get('access_token');
-  return token || null;
-}
-
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -21,28 +12,33 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const restore = async () => {
-      // ── Handle Google OAuth redirect (hash contains access_token) ──────────
-      const oauthToken = parseOAuthHash();
-      if (oauthToken) {
+      // 1. Check for OAuth callback — Supabase can return tokens in either
+      //    the URL hash (#access_token=…) or as query params (?access_token=…).
+      //    We check both so the callback always works regardless of Supabase version.
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const queryParams = new URLSearchParams(window.location.search);
+      const hashToken = hashParams.get('access_token') || queryParams.get('access_token');
+
+      if (hashToken) {
         try {
-          const user = await supabaseAuth.getUser(oauthToken);
+          const user = await supabaseAuth.getUser(hashToken);
           if (user?.email) {
-            setAuthToken(oauthToken);
+            setAuthToken(hashToken);
             setAuthEmail(user.email);
             setIsLoggedIn(true);
-            localStorage.setItem('sk_auth_token', oauthToken);
+            localStorage.setItem('sk_auth_token', hashToken);
             localStorage.setItem('sk_auth_email', user.email);
-            // Clean up URL so the token doesn't stay in the bar
-            window.history.replaceState(null, '', window.location.pathname);
+            // Clean URL (remove hash and query params) without polluting history
+            window.history.replaceState(null, null, window.location.pathname);
             setAuthChecked(true);
             return;
           }
-        } catch {
-          /* fall through to normal restore */
+        } catch (e) {
+          console.error('OAuth restore failed:', e);
         }
       }
 
-      // ── Normal session restore from localStorage ──────────────────────────
+      // 2. Fallback to LocalStorage
       const token = localStorage.getItem('sk_auth_token');
       const email = localStorage.getItem('sk_auth_email');
       if (token && email) {
@@ -65,6 +61,10 @@ export function AuthProvider({ children }) {
     restore();
   }, []);
 
+  const loginWithProvider = useCallback((provider) => {
+    supabaseAuth.signInWithProvider(provider);
+  }, []);
+
   const login = useCallback(async (email, password) => {
     const { data, error } = await supabaseAuth.signIn(email, password);
     if (error) return { error };
@@ -81,7 +81,7 @@ export function AuthProvider({ children }) {
     if (error) return { error };
     if (data?.access_token) {
       setAuthToken(data.access_token);
-      setAuthEmail(email);           // resolve currentUser from team members immediately
+      setAuthEmail(email);           // FIX P0-1: set email so DataContext resolves the name after auto-confirm signup
       setIsLoggedIn(true);
       localStorage.setItem('sk_auth_token', data.access_token);
       localStorage.setItem('sk_auth_email', email);
@@ -93,10 +93,6 @@ export function AuthProvider({ children }) {
     const { error } = await supabaseAuth.recover(email);
     if (error) return { error };
     return { success: true };
-  }, []);
-
-  const loginWithGoogle = useCallback(() => {
-    supabaseAuth.signInWithGoogle();
   }, []);
 
   const logout = useCallback(async () => {
@@ -114,7 +110,7 @@ export function AuthProvider({ children }) {
       authToken, isLoggedIn, authChecked,
       currentUser, setCurrentUser,
       authEmail,                   // FIX P0-1: expose so DataContext can resolve name
-      login, signup, logout, resetPassword, loginWithGoogle,
+      login, signup, logout, resetPassword, loginWithProvider,
     }}>
       {children}
     </AuthContext.Provider>

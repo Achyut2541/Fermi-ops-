@@ -15,7 +15,7 @@ function GoogleIcon() {
 }
 
 export default function AuthScreen() {
-  const { login, signup, resetPassword, loginWithGoogle } = useAuth();
+  const { login, signup, resetPassword, loginWithProvider } = useAuth();
 
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
 
@@ -182,7 +182,7 @@ export default function AuthScreen() {
               {/* Google Sign-in */}
               <button
                 type="button"
-                onClick={loginWithGoogle}
+                onClick={() => loginWithProvider('google')}
                 className="w-full py-2.5 px-4 bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 text-sm font-medium rounded-[5px] transition-colors flex items-center justify-center gap-2.5 shadow-sm"
               >
                 <GoogleIcon />
