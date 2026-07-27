@@ -24,9 +24,27 @@ export default function TasksView() {
   const [newTask, setNewTask] = useState({ ...EMPTY_TASK });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
+  // Bulk multi-select
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const toggleSelect = (id) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const clearSelection = () => setSelectedIds(new Set());
+  const bulkComplete = () => {
+    // manualStatus bypasses the per-task hours prompt so bulk-complete is one click
+    selectedIds.forEach(id => updateTask(id, { status: 'completed', manualStatus: true }));
+    clearSelection();
+  };
+
   const currentProject = selectedProject ? projects.find(p => p.id === selectedProject) : null;
   // Team members only see their own tasks; managers see everything
   let list = filteredTasks(selectedProject, taskFilter, editingTask);
+  // In the default "All" view, hide completed tasks — they're reachable via the Completed filter
+  if (taskFilter === 'all') {
+    list = list.filter(t => t.status !== 'completed' || t.id === editingTask);
+  }
   if (!isManager) {
     list = list.filter(t => {
       const a = Array.isArray(t.assignedTo) ? t.assignedTo : [t.assignedTo];
@@ -48,6 +66,11 @@ export default function TasksView() {
   }
 
   const delayed = list.filter(t => t.status === 'delayed');
+
+  // Selectable = visible, not-yet-completed tasks
+  const selectableIds = list.filter(t => t.status !== 'completed').map(t => t.id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every(id => selectedIds.has(id));
+  const toggleSelectAll = () => { if (allSelected) clearSelection(); else setSelectedIds(new Set(selectableIds)); };
 
   const handleAddTask = () => {
     addTask(newTask);
@@ -118,6 +141,29 @@ export default function TasksView() {
         </div>
       )}
 
+      {/* Bulk select / actions */}
+      {canEdit && selectableIds.length > 0 && (
+        <div className="bg-stone-100 border border-stone-200 rounded-[6px] px-3 py-2 flex items-center justify-between">
+          <label className="flex items-center gap-2 text-xs font-mono text-stone-600 cursor-pointer select-none">
+            <input type="checkbox" checked={allSelected} onChange={toggleSelectAll}
+              className="h-4 w-4 rounded-[3px] border-stone-300 accent-indigo-600 cursor-pointer" />
+            {selectedIds.size > 0 ? `${selectedIds.size} selected` : `Select all (${selectableIds.length})`}
+          </label>
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <button onClick={bulkComplete}
+                className="bg-indigo-600 text-white px-3 py-1.5 rounded-[5px] text-xs font-mono font-medium hover:opacity-85 flex items-center gap-1.5 transition-opacity">
+                <CheckCircle className="w-3.5 h-3.5" /> Mark {selectedIds.size} complete
+              </button>
+              <button onClick={clearSelection}
+                className="text-stone-500 hover:text-stone-800 px-2 py-1.5 text-xs font-mono transition-colors">
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Task list */}
       <div className="space-y-2">
         {list.length === 0 ? (
@@ -165,6 +211,11 @@ export default function TasksView() {
               )}
               <div className="flex items-start justify-between">
                 <div className="flex items-start flex-1 min-w-0">
+                  {canEdit && task.status !== 'completed' && (
+                    <input type="checkbox" checked={selectedIds.has(task.id)} onChange={() => toggleSelect(task.id)}
+                      className="mr-3 mt-1 h-4 w-4 rounded-[3px] border-stone-300 accent-indigo-600 cursor-pointer flex-shrink-0"
+                      title="Select task" />
+                  )}
                   <button className="mr-3 mt-0.5 flex-shrink-0"
                     onClick={() => {
                       if (task.status === 'completed') {

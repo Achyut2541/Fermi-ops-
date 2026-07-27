@@ -19,6 +19,7 @@ export default function TeamView() {
   const {
     teamMembers, setTeamMembers, activeMembers,
     canEditProjects, getWorkload, capacityPct, capacityLabel,
+    deactivateMember, reactivateMember,
   } = useData();
 
   const [newMember, setNewMember] = useState({ ...EMPTY_MEMBER });
@@ -62,15 +63,14 @@ export default function TeamView() {
 
   const toggleActive = (member) => {
     if (!member.active) {
-      // reactivate: no confirm needed
-      setTeamMembers(teamMembers.map(m => m.id === member.id ? { ...m, active: true } : m));
+      reactivateMember(member.id);   // reactivate: no confirm needed
     } else {
       setConfirmDeactivateId(member.id);
     }
   };
 
   const confirmDeactivate = (id) => {
-    setTeamMembers(teamMembers.map(m => m.id === id ? { ...m, active: false } : m));
+    deactivateMember(id);   // strips member off open tasks → they become Unassigned
     setConfirmDeactivateId(null);
   };
 
@@ -117,7 +117,7 @@ export default function TeamView() {
                       <div className="flex items-center justify-between px-4 py-2.5 border-b border-red-200">
                         <div className="flex items-center gap-2 text-sm font-medium text-red-700">
                           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                          Deactivate <span className="font-bold">{member.name}</span>?
+                          Deactivate <span className="font-bold">{member.name}</span>? Their open tasks move to Unassigned.
                         </div>
                         <div className="flex gap-2">
                           <button onClick={() => confirmDeactivate(member.id)}

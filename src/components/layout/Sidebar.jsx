@@ -1,4 +1,4 @@
-import { LayoutDashboard, Target, List, Users, Calendar, AlertTriangle, AlertCircle, Settings } from 'lucide-react';
+import { LayoutDashboard, Target, List, Users, Calendar, AlertTriangle, AlertCircle, Settings, Trello } from 'lucide-react';
 import { useUI } from '../../contexts/UIContext';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'My Dashboard' },
   { id: 'projects', icon: Target, label: 'Projects', showCount: 'projects' },
   { id: 'tasks', icon: List, label: 'Tasks', showCount: 'openTasks', showAlert: 'delayed' },
+  { id: 'kanban', icon: Trello, label: 'Board' },
   { id: 'capacity', icon: Users, label: 'Capacity', showCount: 'team' },
   { id: 'timeline', icon: Calendar, label: 'Timeline' },
   { id: 'risk', icon: AlertTriangle, label: 'Risk & Resources' },

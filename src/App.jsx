@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 import DashboardView from './components/dashboard/DashboardView';
 import ProjectsView from './components/projects/ProjectsView';
 import TasksView from './components/tasks/TasksView';
+import KanbanView from './components/kanban/KanbanView';
 import CapacityView from './components/capacity/CapacityView';
 import TimelineView from './components/timeline/TimelineView';
 import RiskView from './components/risk/RiskView';
@@ -21,6 +22,7 @@ function TabRouter() {
     case 'dashboard': return <DashboardView />;
     case 'projects': return <ProjectsView />;
     case 'tasks': return <TasksView />;
+    case 'kanban': return <KanbanView />;
     case 'capacity': return <CapacityView />;
     case 'timeline': return <TimelineView />;
     case 'risk': return <RiskView />;
@@ -33,8 +35,8 @@ function TabRouter() {
 
 // FIX P1-3: gate content on dataLoaded so users never see a stale seed flash
 function DataGate({ children }) {
-  const { dataLoaded, currentUser } = useData();
-  const { authEmail } = useAuth();
+  const { dataLoaded } = useData();
+  const { authEmail, currentUser } = useAuth();   // currentUser lives in AuthContext, not DataContext
 
   // Show spinner until Supabase has loaded AND currentUser has been resolved from email
   const ready = dataLoaded && (currentUser || !authEmail);

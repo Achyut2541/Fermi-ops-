@@ -53,15 +53,37 @@ export function DataProvider({ children }) {
         if (dbH?.length > 0) setHistoricalData(JSON.parse(dbH[0].payload || '{}'));
       } catch { /* defaults */ }
 
+      // Local persistence — restore prior edits so changes survive a page refresh
+      // even with an empty backend. Takes precedence over seed data.
+      try {
+        const saved = localStorage.getItem('fermi_data_v1');
+        if (saved) {
+          const d = JSON.parse(saved);
+          if (Array.isArray(d.projects)) setProjects(d.projects);
+          if (Array.isArray(d.tasks)) setTasks(d.tasks);
+          if (Array.isArray(d.teamMembers)) setTeamMembers(d.teamMembers);
+          if (d.historicalData) setHistoricalData(d.historicalData);
+        }
+      } catch { /* ignore corrupt cache */ }
+
       setDataLoaded(true);
     };
     boot();
   }, []);
 
+  // Persist every mutation locally (deactivations, reassignments, completions, edits)
+  // so nothing resets on refresh. Only writes after initial load to avoid clobbering saved data.
+  useEffect(() => {
+    if (!dataLoaded) return;
+    try {
+      localStorage.setItem('fermi_data_v1', JSON.stringify({ projects, tasks, teamMembers, historicalData }));
+    } catch { /* storage full or disabled */ }
+  }, [dataLoaded, projects, tasks, teamMembers, historicalData]);
+
   // FIX P0-1: resolve currentUser from auth email once team data is loaded
   useEffect(() => {
     if (!dataLoaded || !authEmail) return;
-    const matched = teamMembers.find(m => m.email === authEmail);
+    const matched = teamMembers.find(m => m.email?.toLowerCase() === authEmail?.toLowerCase());
     if (matched && matched.name !== currentUser) {
       setCurrentUser(matched.name);
     }
@@ -334,6 +356,26 @@ export function DataProvider({ children }) {
     setTeamMembers(prev => prev.map(m => m.id === updated.id ? updated : m));
   }, []);
 
+  // Deactivate a member and move their open tasks to Unassigned (never silently hide live work)
+  const deactivateMember = useCallback((id) => {
+    setTeamMembers(prev => {
+      const member = prev.find(m => m.id === id);
+      if (member) {
+        setTasks(ts => ts.map(t => {
+          if (t.status === 'completed') return t;
+          const a = Array.isArray(t.assignedTo) ? t.assignedTo : [t.assignedTo].filter(Boolean);
+          if (!a.includes(member.name)) return t;
+          return { ...t, assignedTo: a.filter(n => n !== member.name) };
+        }));
+      }
+      return prev.map(m => m.id === id ? { ...m, active: false } : m);
+    });
+  }, []);
+
+  const reactivateMember = useCallback((id) => {
+    setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, active: true } : m));
+  }, []);
+
   const assessTaskRisk = useCallback((task) => {
     let score = 0;
     const reasons = [];
@@ -452,7 +494,7 @@ export function DataProvider({ children }) {
       tasksWithStatus, workloadData, getWorkload, capacityPct, capacityLabel,
       addProject, updateProject, deleteProject,
       addTask, updateTask, completeTaskWithHours, logClientDelay, deleteTask,
-      addTeamMember, updateTeamMember,
+      addTeamMember, updateTeamMember, deactivateMember, reactivateMember,
       assessTaskRisk, suggestReassignment,
       generateTasksFromTemplate, triggerSlackToast,
       getRawStatus, delayedCount, filteredTasks, canStartTask,
