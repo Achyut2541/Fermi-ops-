@@ -62,8 +62,16 @@ export function DataProvider({ children }) {
         const saved = localStorage.getItem('fermi_data_v1');
         if (saved) {
           const d = JSON.parse(saved);
-          if (Array.isArray(d.projects)) setProjects(d.projects);
-          if (Array.isArray(d.tasks)) setTasks(d.tasks);
+          // Keep saved projects/tasks, but append any new ones added to seed (by id) so
+          // newly-added projects show up without wiping the browser's existing edits.
+          if (Array.isArray(d.projects)) {
+            const ids = new Set(d.projects.map(p => p.id));
+            setProjects([...d.projects, ...SEED_PROJECTS.filter(p => !ids.has(p.id))]);
+          }
+          if (Array.isArray(d.tasks)) {
+            const ids = new Set(d.tasks.map(t => t.id));
+            setTasks([...d.tasks, ...SEED_TASKS.filter(t => !ids.has(t.id))]);
+          }
           if (Array.isArray(d.teamMembers)) {
             // Merge: seed is canonical for names/roles/caps and adds new people,
             // but each browser keeps its own active/inactive choices and any custom members it added.
