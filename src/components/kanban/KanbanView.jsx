@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Trello, GripVertical, AlertTriangle } from 'lucide-react';
+import { Trello, GripVertical, AlertTriangle, Plus } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, StatusBadge, PriorityBadge } from '../ui';
@@ -11,7 +11,7 @@ export default function KanbanView() {
   const {
     activeMembers, tasksWithStatus, projects,
     canEditProjects, canViewAllProjects, capacityPct, getWorkload,
-    updateTask,
+    updateTask, addTask,
   } = useData();
   const { currentUser } = useAuth();
 
@@ -20,6 +20,74 @@ export default function KanbanView() {
 
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
+  const [addingFor, setAddingFor] = useState(null);   // member name we're adding a task for
+  const [newTitle, setNewTitle] = useState('');
+  const [newProjectId, setNewProjectId] = useState('');
+
+  const activeProjects = useMemo(
+    () => projects.filter(p => !p.archived && p.phase !== 'Complete'),
+    [projects]
+  );
+
+  const submitNewTask = (memberName) => {
+    if (!newTitle.trim() || !newProjectId) return;
+    const due = new Date(); due.setDate(due.getDate() + 7);
+    addTask({
+      projectId: newProjectId,
+      title: newTitle.trim(),
+      assignedTo: memberName === UNASSIGNED ? [] : [memberName],
+      dueDate: due.toISOString().split('T')[0],
+      status: 'backlog',
+      priority: 'medium',
+      estimatedHours: 8,
+      actualHours: null,
+      clientDelayDays: 0,
+    });
+    setNewTitle(''); setNewProjectId(''); setAddingFor(null);
+  };
+
+  const addTaskControl = (memberName) => {
+    if (addingFor !== memberName) {
+      return (
+        <button
+          onClick={() => { setAddingFor(memberName); setNewTitle(''); setNewProjectId(''); }}
+          className="mx-2 mb-2 mt-0.5 flex items-center gap-1.5 px-2 py-1.5 text-xs font-mono text-stone-400 hover:text-indigo-600 hover:bg-white rounded-[5px] transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add task
+        </button>
+      );
+    }
+    return (
+      <div className="mx-2 mb-2 mt-0.5 p-2 bg-white border border-indigo-200 rounded-[6px] space-y-2">
+        <input
+          autoFocus
+          value={newTitle}
+          onChange={e => setNewTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') submitNewTask(memberName); if (e.key === 'Escape') setAddingFor(null); }}
+          placeholder="Task title"
+          className="w-full px-2 py-1.5 text-sm border border-stone-200 rounded-[5px] focus:border-indigo-500 focus:outline-none"
+        />
+        <select
+          value={newProjectId}
+          onChange={e => setNewProjectId(e.target.value)}
+          className="w-full px-2 py-1.5 text-xs font-mono border border-stone-200 rounded-[5px] bg-white focus:border-indigo-500 focus:outline-none"
+        >
+          <option value="">Select project…</option>
+          {activeProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => submitNewTask(memberName)}
+            disabled={!newTitle.trim() || !newProjectId}
+            className="flex-1 bg-indigo-600 text-white px-2 py-1.5 rounded-[5px] text-xs font-mono font-medium hover:opacity-85 disabled:opacity-40 transition-opacity"
+          >
+            Add
+          </button>
+          <button onClick={() => setAddingFor(null)} className="px-2 py-1.5 text-xs font-mono text-stone-500 hover:text-stone-800">Cancel</button>
+        </div>
+      </div>
+    );
+  };
 
   const projectName = (id) => projects.find(p => p.id === id)?.name || 'No project';
 
@@ -167,6 +235,7 @@ export default function KanbanView() {
                 </div>
               </div>
               {cardsBody(unassignedTasks, isOver, 'All assigned')}
+              {canReassign && addTaskControl(UNASSIGNED)}
             </div>
           );
         })()}
@@ -208,6 +277,7 @@ export default function KanbanView() {
               </div>
 
               {cardsBody(tasks, isOver, 'No active tasks')}
+              {canReassign && addTaskControl(member.name)}
             </div>
           );
         })}

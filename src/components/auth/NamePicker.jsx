@@ -33,7 +33,9 @@ export default function NamePicker() {
   const onKeyDown = (e) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setHighlight(h => Math.min(h + 1, results.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlight(h => Math.max(h - 1, 0)); }
-    else if (e.key === 'Enter') { e.preventDefault(); choose(results[highlight]); }
+    // Only log in on Enter once the user has typed to find themselves — otherwise Enter
+    // on the unfiltered list would select whoever sorts first (was auto-logging everyone in as Achyut).
+    else if (e.key === 'Enter') { e.preventDefault(); if (query.trim()) choose(results[highlight]); }
   };
 
   return (
