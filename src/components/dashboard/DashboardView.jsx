@@ -51,8 +51,8 @@ export default function DashboardView() {
     if (project.phase === 'Complete') return { label: 'Completed', color: 'bg-gray-100 text-stone-500', dot: 'bg-gray-400' };
     const pTasks = tasksWithStatus.filter(t => t.projectId === project.id);
     const activePTasks = pTasks.filter(t => t.status !== 'completed');
-    // All tasks done but phase not yet flipped → effectively wrapped, not at risk.
-    if (pTasks.length > 0 && activePTasks.length === 0) return { label: 'On Track', color: 'bg-green-50 text-green-700', dot: 'bg-green-500' };
+    // Every task complete but the phase field wasn't advanced → work is finished, so "Done" (not "On Track").
+    if (pTasks.length > 0 && activePTasks.length === 0) return { label: 'Done', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' };
     const overdueCount = activePTasks.filter(t => t.status === 'delayed').length;
     const daysLeft = Math.ceil((new Date(project.decidedEndDate || project.endDate) - today) / 86400000);
     // Past the end date only matters while there is still open work.
