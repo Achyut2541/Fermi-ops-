@@ -30,7 +30,9 @@ export default function AttentionBanner({ overdueTasks, overloadedMembers, proje
           <div key={m.name} className="flex items-center gap-2 text-sm">
             <span className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" />
             <span className="font-medium text-stone-900">{m.name}</span>
-            <span className="text-stone-400 font-mono">overloaded — {m.activeTasks} tasks ({capacityPct(m)}% capacity)</span>
+            <span className="text-stone-400 font-mono">
+              over capacity — {m.projectCount}/{m.maxProjects} projects · {m.activeTasks} active ({capacityPct(m)}%)
+            </span>
           </div>
         ))}
       </div>

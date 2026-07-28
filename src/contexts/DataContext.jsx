@@ -229,9 +229,9 @@ export function DataProvider({ children }) {
   const getWorkload = useCallback(() => workloadData, [workloadData]);
 
   const capacityPct = useCallback((m) => {
-    // No active tasks → the person is available. Project assignments alone never make
-    // someone "overloaded" (that produced nonsense like "0 tasks · 200%").
-    if (!m.activeTasks) return 0;
+    // Documented rule: higher of (projects / role max) or (weighted task load / role max).
+    // Project over-allocation (e.g. 2 projects against a cap of 1) counts even with no active
+    // tasks — the Projects vs Task-load bars in the UI show which one is driving the number.
     const projPct = m.maxProjects > 0 ? Math.round((m.projectCount / m.maxProjects) * 100) : 0;
     // Weighted active task load (Critical 2.0 · High 1.5 · Medium 1.0 · Low 0.5) vs a role capacity of 8 units.
     const weighted = (m.taskList || [])
