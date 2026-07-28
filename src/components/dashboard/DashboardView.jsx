@@ -37,6 +37,7 @@ export default function DashboardView() {
   const {
     projects, setProjects, tasks, tasksWithStatus, getWorkload, capacityPct,
     canViewAllProjects, canEditProjects, allTeamNames, updateTask,
+    projectHealth, isOverloaded,
   } = useData();
   const { currentUser } = useAuth();
 
@@ -46,20 +47,7 @@ export default function DashboardView() {
   const hour = today.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const getProjectHealth = (project) => {
-    // A finished project is never "at risk" or "overdue".
-    if (project.phase === 'Complete') return { label: 'Completed', color: 'bg-gray-100 text-stone-500', dot: 'bg-gray-400' };
-    const pTasks = tasksWithStatus.filter(t => t.projectId === project.id);
-    const activePTasks = pTasks.filter(t => t.status !== 'completed');
-    // Every task complete but the phase field wasn't advanced → work is finished, so "Done" (not "On Track").
-    if (pTasks.length > 0 && activePTasks.length === 0) return { label: 'Done', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' };
-    const overdueCount = activePTasks.filter(t => t.status === 'delayed').length;
-    const daysLeft = Math.ceil((new Date(project.decidedEndDate || project.endDate) - today) / 86400000);
-    // Past the end date only matters while there is still open work.
-    if (overdueCount >= 2 || (daysLeft < 0 && activePTasks.length > 0)) return { label: 'At Risk', color: 'bg-red-50 text-red-700', dot: 'bg-red-500' };
-    if (overdueCount >= 1 || daysLeft <= 7) return { label: 'Watch', color: 'bg-yellow-50 text-yellow-700', dot: 'bg-yellow-500' };
-    return { label: 'On Track', color: 'bg-green-50 text-green-700', dot: 'bg-green-500' };
-  };
+  const getProjectHealth = projectHealth;   // shared source of truth
 
   let myProjects;
   if (viewingAs || !isManagerView) {
@@ -75,6 +63,8 @@ export default function DashboardView() {
     const q = searchQuery.toLowerCase();
     myProjects = myProjects.filter(p => p.name.toLowerCase().includes(q) || p.type.toLowerCase().includes(q));
   }
+  // Order by health: At Risk → Watch → On Track → Done → Completed. Finished work sinks to the bottom.
+  myProjects = [...myProjects].sort((a, b) => projectHealth(a).rank - projectHealth(b).rank);
 
   const getProjectTasks = (projectId) => {
     let pTasks = tasksWithStatus.filter(t => t.projectId === projectId && t.status !== 'completed');
@@ -124,16 +114,17 @@ export default function DashboardView() {
       return diff >= 0 && diff <= 7;
     });
     const teamWl = getWorkload();
-    const overloadedMembers = teamWl.filter(m => capacityPct(m) >= 80);
+    const overloadedMembers = teamWl.filter(isOverloaded);
     const atRiskProjects = myProjects.filter(p => {
       const h = getProjectHealth(p);
       return h.label === 'At Risk' || h.label === 'Watch';
     });
+    const activeProjects = myProjects.filter(p => !p.archived && p.phase !== 'Complete');
 
     // FIX P2: stat cards now have onClick drill-downs
     const statsData = [
       {
-        label: 'Active Projects', value: myProjects.filter(p => !p.archived).length,
+        label: 'Active Projects', value: activeProjects.length,
         sub: atRiskProjects.length > 0 ? `${atRiskProjects.length} need attention` : 'All looking good',
         valueColor: 'text-stone-900', subColor: atRiskProjects.length > 0 ? 'text-orange-600' : 'text-green-600',
         onClick: () => setActiveTab('projects'),

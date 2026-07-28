@@ -232,11 +232,37 @@ export function DataProvider({ children }) {
 
   const capacityLabel = useCallback((pct) => {
     if (pct === 0) return { label: 'Available for new work', color: 'bg-emerald-50 text-emerald-700' };
-    if (pct <= 50) return { label: 'Has capacity', color: 'bg-indigo-50 text-indigo-700' };
-    if (pct <= 75) return { label: 'Busy', color: 'bg-amber-50 text-amber-700' };
-    if (pct <= 99) return { label: 'At capacity', color: 'bg-orange-50 text-orange-700' };
+    if (pct < 50) return { label: 'Has capacity', color: 'bg-indigo-50 text-indigo-700' };
+    if (pct < 80) return { label: 'Busy', color: 'bg-amber-50 text-amber-700' };
+    if (pct < 100) return { label: 'At capacity', color: 'bg-orange-50 text-orange-700' };
     return { label: 'Overloaded', color: 'bg-red-50 text-red-700' };
   }, []);
+
+  // Single source of truth for "is this person overloaded" (used by dashboard, capacity, risk).
+  const isOverloaded = useCallback((m) => capacityPct(m) >= 100, [capacityPct]);
+
+  // Single source of truth for project health. rank drives ordering (0 = most urgent).
+  const projectHealth = useCallback((project) => {
+    if (project.phase === 'Complete')
+      return { label: 'Completed', color: 'bg-gray-100 text-stone-500', dot: 'bg-gray-400', rank: 4 };
+    const pTasks = tasksWithStatus.filter(t => t.projectId === project.id);
+    const active = pTasks.filter(t => t.status !== 'completed');
+    if (pTasks.length > 0 && active.length === 0)
+      return { label: 'Done', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', rank: 3 };
+    const overdue = active.filter(t => t.status === 'delayed').length;
+    const daysLeft = Math.ceil((new Date(project.decidedEndDate || project.endDate) - new Date()) / 86400000);
+    if (overdue >= 2 || (daysLeft < 0 && active.length > 0))
+      return { label: 'At Risk', color: 'bg-red-50 text-red-700', dot: 'bg-red-500', rank: 0 };
+    if (overdue >= 1 || daysLeft <= 7)
+      return { label: 'Watch', color: 'bg-yellow-50 text-yellow-700', dot: 'bg-yellow-500', rank: 1 };
+    return { label: 'On Track', color: 'bg-green-50 text-green-700', dot: 'bg-green-500', rank: 2 };
+  }, [tasksWithStatus]);
+
+  // A project is "active" (live) until its phase is Complete. Archived projects never count.
+  const activeProjectCount = useMemo(
+    () => projects.filter(p => !p.archived && p.phase !== 'Complete').length,
+    [projects]
+  );
 
   // ── CRUD Operations ────────────────────────────────────────────────────
 
@@ -499,7 +525,8 @@ export function DataProvider({ children }) {
       syncEngine: syncEngineRef,    // FIX P0-2: expose as ref so SettingsView always gets current instance
       activeMembers, designTeam, devTeam, accountManagers, allTeamNames,
       userRoles, teamRoles, getUserRole, canEditProjects, canViewAllProjects, canViewAs,
-      tasksWithStatus, workloadData, getWorkload, capacityPct, capacityLabel,
+      tasksWithStatus, workloadData, getWorkload, capacityPct, capacityLabel, isOverloaded,
+      projectHealth, activeProjectCount,
       addProject, updateProject, deleteProject,
       addTask, updateTask, completeTaskWithHours, logClientDelay, deleteTask,
       addTeamMember, updateTeamMember, deactivateMember, reactivateMember,

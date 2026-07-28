@@ -13,7 +13,7 @@ export default function ProjectsView() {
     showAddProject, setShowAddProject, editingProject, setEditingProject,
     searchQuery, showToast,
   } = useUI();
-  const { projects, tasks, filteredTasks, delayedCount, addProject, updateProject, deleteProject, canEditProjects } = useData();
+  const { projects, tasks, filteredTasks, delayedCount, addProject, updateProject, deleteProject, canEditProjects, projectHealth } = useData();
   const { currentUser } = useAuth();
   const canEdit = canEditProjects(currentUser);
 
@@ -23,7 +23,7 @@ export default function ProjectsView() {
 
   const currentProject = selectedProject ? projects.find(p => p.id === selectedProject) : null;
 
-  // Filter by search query
+  // Filter by search query, then order by health (live/at-risk first, finished last)
   const visibleProjects = projects.filter(p => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
@@ -33,7 +33,7 @@ export default function ProjectsView() {
       p.team?.am?.toLowerCase().includes(q) ||
       p.phase?.toLowerCase().includes(q)
     );
-  });
+  }).sort((a, b) => projectHealth(a).rank - projectHealth(b).rank);
 
   const handleSaveNew = () => {
     addProject(newProject, customTasks);

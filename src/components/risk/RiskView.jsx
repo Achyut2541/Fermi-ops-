@@ -7,7 +7,7 @@ import { fmt } from '../../lib/utils';
 export default function RiskView() {
   const {
     projects, tasksWithStatus, assessTaskRisk, canStartTask,
-    suggestReassignment, updateTask, getWorkload, historicalData, canEditProjects,
+    suggestReassignment, updateTask, getWorkload, historicalData, canEditProjects, isOverloaded,
   } = useData();
   const { currentUser } = useAuth();
   const canEdit = canEditProjects(currentUser);
@@ -26,7 +26,7 @@ export default function RiskView() {
     .filter(t => t.risk.riskLevel !== 'none')
     .sort((a, b) => riskOrder[a.risk.riskLevel] - riskOrder[b.risk.riskLevel]);
 
-  const overloadedPeople = getWorkload().filter(w => w.activeTasks >= 6);
+  const overloadedPeople = getWorkload().filter(isOverloaded);
   const blockedTasks = tasksWithRisk.filter(t => !t.dependency.canStart);
 
   const riskColors = {

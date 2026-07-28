@@ -23,7 +23,7 @@ export default function CapacityView() {
   const workload = getWorkload().sort((a, b) => capacityPct(b) - capacityPct(a));
   const overloadedList  = workload.filter(m => capacityPct(m) >= 100);
   const atCapacityList  = workload.filter(m => capacityPct(m) >= 80 && capacityPct(m) < 100);
-  const hasHeadroomList = workload.filter(m => capacityPct(m) > 0 && capacityPct(m) < 50);
+  const hasHeadroomList = workload.filter(m => capacityPct(m) > 0 && capacityPct(m) < 80);   // 1–79% (no longer drops 50–79)
   const availableList   = workload.filter(m => capacityPct(m) === 0);
 
   const filterGroups = [
