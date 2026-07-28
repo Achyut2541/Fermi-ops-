@@ -10,6 +10,9 @@ import { useAuth } from './AuthContext';
 
 const DataContext = createContext(null);
 
+// Priority weights for weighted task-load capacity.
+const PRIORITY_WEIGHT = { critical: 2, high: 1.5, medium: 1, low: 0.5 };
+
 export function DataProvider({ children }) {
   const { currentUser, setCurrentUser, authEmail } = useAuth();  // FIX P0-1: get authEmail
 
@@ -215,8 +218,15 @@ export function DataProvider({ children }) {
   const getWorkload = useCallback(() => workloadData, [workloadData]);
 
   const capacityPct = useCallback((m) => {
+    // No active tasks → the person is available. Project assignments alone never make
+    // someone "overloaded" (that produced nonsense like "0 tasks · 200%").
+    if (!m.activeTasks) return 0;
     const projPct = m.maxProjects > 0 ? Math.round((m.projectCount / m.maxProjects) * 100) : 0;
-    const taskPct = m.activeTasks === 0 ? 0 : Math.min(100, Math.round((m.activeTasks / 8) * 100));
+    // Weighted active task load (Critical 2.0 · High 1.5 · Medium 1.0 · Low 0.5) vs a role capacity of 8 units.
+    const weighted = (m.taskList || [])
+      .filter(t => t.status !== 'completed')
+      .reduce((s, t) => s + (PRIORITY_WEIGHT[t.priority] ?? 1), 0);
+    const taskPct = Math.min(150, Math.round((weighted / 8) * 100));
     return Math.max(projPct, taskPct);
   }, []);
 

@@ -31,9 +31,13 @@ export default function ProjectCard({
                 <span>{project.type}</span>
                 <span>{completedCount}/{totalCount} tasks</span>
                 {project.team?.am && <span className="hidden sm:inline">AM: {project.team.am}</span>}
-                {daysLeft >= 0
-                  ? <span className={daysLeft <= 7 ? 'text-orange-600 font-medium' : ''}>{daysLeft}d left</span>
-                  : <span className="text-red-600 font-medium">{Math.abs(daysLeft)}d overdue</span>}
+                {health.label === 'Completed'
+                  ? <span className="text-stone-400">Delivered</span>
+                  : activeTasks.length === 0
+                    ? <span className="text-green-600 font-medium">All tasks done</span>
+                    : daysLeft >= 0
+                      ? <span className={daysLeft <= 7 ? 'text-orange-600 font-medium' : ''}>{daysLeft}d left</span>
+                      : <span className="text-red-600 font-medium">{Math.abs(daysLeft)}d overdue</span>}
               </div>
             </div>
           </div>

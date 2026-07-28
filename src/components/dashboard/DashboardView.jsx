@@ -47,11 +47,16 @@ export default function DashboardView() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const getProjectHealth = (project) => {
+    // A finished project is never "at risk" or "overdue".
+    if (project.phase === 'Complete') return { label: 'Completed', color: 'bg-gray-100 text-stone-500', dot: 'bg-gray-400' };
     const pTasks = tasksWithStatus.filter(t => t.projectId === project.id);
-    const overdueCount = pTasks.filter(t => t.status === 'delayed' && t.status !== 'completed').length;
+    const activePTasks = pTasks.filter(t => t.status !== 'completed');
+    // All tasks done but phase not yet flipped → effectively wrapped, not at risk.
+    if (pTasks.length > 0 && activePTasks.length === 0) return { label: 'On Track', color: 'bg-green-50 text-green-700', dot: 'bg-green-500' };
+    const overdueCount = activePTasks.filter(t => t.status === 'delayed').length;
     const daysLeft = Math.ceil((new Date(project.decidedEndDate || project.endDate) - today) / 86400000);
-    if (project.status === 'completed') return { label: 'Completed', color: 'bg-gray-100 text-stone-500', dot: 'bg-gray-400' };
-    if (overdueCount >= 2 || daysLeft < 0) return { label: 'At Risk', color: 'bg-red-50 text-red-700', dot: 'bg-red-500' };
+    // Past the end date only matters while there is still open work.
+    if (overdueCount >= 2 || (daysLeft < 0 && activePTasks.length > 0)) return { label: 'At Risk', color: 'bg-red-50 text-red-700', dot: 'bg-red-500' };
     if (overdueCount >= 1 || daysLeft <= 7) return { label: 'Watch', color: 'bg-yellow-50 text-yellow-700', dot: 'bg-yellow-500' };
     return { label: 'On Track', color: 'bg-green-50 text-green-700', dot: 'bg-green-500' };
   };
