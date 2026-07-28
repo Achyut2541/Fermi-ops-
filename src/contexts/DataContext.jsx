@@ -82,12 +82,10 @@ export function DataProvider({ children }) {
 
   // FIX P0-1: resolve currentUser from auth email once team data is loaded
   useEffect(() => {
-    if (!dataLoaded || !authEmail) return;
+    if (!dataLoaded || !authEmail || currentUser) return;   // resolve once per identity
     const matched = teamMembers.find(m => m.email?.toLowerCase() === authEmail?.toLowerCase());
-    if (matched && matched.name !== currentUser) {
-      setCurrentUser(matched.name);
-    }
-  }, [dataLoaded, authEmail, teamMembers, currentUser, setCurrentUser]);
+    if (matched) setCurrentUser(matched.name);
+  }, [dataLoaded, authEmail, currentUser, teamMembers, setCurrentUser]);
 
   // FIX P0-2: create sync engine once data is loaded
   useEffect(() => {

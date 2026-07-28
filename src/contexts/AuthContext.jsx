@@ -1,85 +1,41 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabaseAuth } from '../lib/supabase';
 
 const AuthContext = createContext(null);
+const PROFILE_KEY = 'sk_profile_email';
 
+// No passwords / no Supabase auth. Identity is chosen from a name picker and
+// remembered per browser. authEmail is the identity key; DataContext resolves
+// currentUser (the person's name + role) from it against the team roster.
 export function AuthProvider({ children }) {
-  const [authToken, setAuthToken] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authEmail, setAuthEmail] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);  // resolved by DataContext
   const [authChecked, setAuthChecked] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);   // null until resolved from email
-  const [authEmail, setAuthEmail] = useState(null);        // FIX P0-1: track auth email
 
   useEffect(() => {
-    const restore = async () => {
-      const token = localStorage.getItem('sk_auth_token');
-      const email = localStorage.getItem('sk_auth_email');
-      if (token && email) {
-        try {
-          const user = await supabaseAuth.getUser(token);
-          if (user?.email) {
-            setAuthToken(token);
-            setAuthEmail(email);   // FIX P0-1: store email so DataContext can resolve name
-            setIsLoggedIn(true);
-          } else {
-            localStorage.removeItem('sk_auth_token');
-            localStorage.removeItem('sk_auth_email');
-          }
-        } catch {
-          /* stay logged out */
-        }
-      }
-      setAuthChecked(true);
-    };
-    restore();
+    const saved = localStorage.getItem(PROFILE_KEY);
+    if (saved) setAuthEmail(saved);
+    setAuthChecked(true);
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    const { data, error } = await supabaseAuth.signIn(email, password);
-    if (error) return { error };
-    setAuthToken(data.access_token);
-    setAuthEmail(email);           // FIX P0-1: set email so DataContext resolves the name
-    setIsLoggedIn(true);
-    localStorage.setItem('sk_auth_token', data.access_token);
-    localStorage.setItem('sk_auth_email', email);
-    return { error: null };
+  const selectProfile = useCallback((email) => {
+    setCurrentUser(null);          // force re-resolution against the new identity
+    setAuthEmail(email);
+    localStorage.setItem(PROFILE_KEY, email);
   }, []);
 
-  const signup = useCallback(async (email, password) => {
-    const { data, error } = await supabaseAuth.signUp(email, password);
-    if (error) return { error };
-    if (data?.access_token) {
-      setAuthToken(data.access_token);
-      setAuthEmail(email);           // resolve currentUser from team members immediately
-      setIsLoggedIn(true);
-      localStorage.setItem('sk_auth_token', data.access_token);
-      localStorage.setItem('sk_auth_email', email);
-    }
-    return { error: null, needsConfirmation: !data?.access_token };
+  const logout = useCallback(() => {
+    setAuthEmail(null);
+    setCurrentUser(null);
+    localStorage.removeItem(PROFILE_KEY);
   }, []);
 
-  const resetPassword = useCallback(async (email) => {
-    const { error } = await supabaseAuth.recover(email);
-    if (error) return { error };
-    return { success: true };
-  }, []);
-
-  const logout = useCallback(async () => {
-    if (authToken) await supabaseAuth.signOut(authToken);
-    setAuthToken(null);
-    setAuthEmail(null);            // FIX P0-1: clear email on logout
-    setIsLoggedIn(false);
-    setCurrentUser(null);          // FIX P0-1: null, not hardcoded 'Achyut'
-    localStorage.removeItem('sk_auth_token');
-    localStorage.removeItem('sk_auth_email');
-  }, [authToken]);
+  const isLoggedIn = !!authEmail;
 
   return (
     <AuthContext.Provider value={{
-      authToken, isLoggedIn, authChecked,
+      authChecked, isLoggedIn, authEmail,
       currentUser, setCurrentUser,
-      authEmail,                   // FIX P0-1: expose so DataContext can resolve name
-      login, signup, logout, resetPassword,
+      selectProfile, logout,
     }}>
       {children}
     </AuthContext.Provider>

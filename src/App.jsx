@@ -2,7 +2,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider, useData } from './contexts/DataContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import AppShell from './components/layout/AppShell';
-import AuthScreen from './components/auth/AuthScreen';
+import NamePicker from './components/auth/NamePicker';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import DashboardView from './components/dashboard/DashboardView';
 import ProjectsView from './components/projects/ProjectsView';
@@ -68,27 +68,28 @@ function AuthGate() {
     );
   }
 
-  if (!isLoggedIn) return <AuthScreen />;
+  if (!isLoggedIn) return <NamePicker />;
 
   return (
-    <DataProvider>
-      <UIProvider>
-        <AppShell>
-          <ErrorBoundary>
-            <DataGate>           {/* FIX P1-3: wrap content in loading gate */}
-              <TabRouter />
-            </DataGate>
-          </ErrorBoundary>
-        </AppShell>
-      </UIProvider>
-    </DataProvider>
+    <AppShell>
+      <ErrorBoundary>
+        <DataGate>           {/* FIX P1-3: wrap content in loading gate */}
+          <TabRouter />
+        </DataGate>
+      </ErrorBoundary>
+    </AppShell>
   );
 }
 
+// Providers wrap the whole app so the name picker can read the team roster.
 export default function App() {
   return (
     <AuthProvider>
-      <AuthGate />
+      <DataProvider>
+        <UIProvider>
+          <AuthGate />
+        </UIProvider>
+      </DataProvider>
     </AuthProvider>
   );
 }
