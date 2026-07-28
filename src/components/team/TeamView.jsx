@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Plus, Edit2, AlertTriangle } from 'lucide-react';
+import { Users, Plus, Edit2, AlertTriangle, ChevronDown, Archive } from 'lucide-react';
 import { useUI } from '../../contexts/UIContext';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -24,6 +24,9 @@ export default function TeamView() {
 
   const [newMember, setNewMember] = useState({ ...EMPTY_MEMBER });
   const [confirmDeactivateId, setConfirmDeactivateId] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const archivedMembers = teamMembers.filter(m => !m.active);
 
   if (!canEditProjects(currentUser)) {
     return (
@@ -98,9 +101,9 @@ export default function TeamView() {
         </button>
       </div>
 
-      {/* Team Groups */}
+      {/* Team Groups — active members only; deactivated people are archived below */}
       {groups.map(group => {
-        const groupMembers = teamMembers.filter(m => m.type === group.type);
+        const groupMembers = teamMembers.filter(m => m.type === group.type && m.active);
         if (groupMembers.length === 0) return null;
         return (
           <div key={group.type}>
@@ -172,6 +175,44 @@ export default function TeamView() {
           </div>
         );
       })}
+
+      {/* Archived (deactivated) members — hidden by default */}
+      {archivedMembers.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowArchived(v => !v)}
+            className="flex items-center gap-2 text-xs font-mono text-stone-400 hover:text-stone-600 transition-colors"
+          >
+            <Archive className="w-3.5 h-3.5" />
+            Archived ({archivedMembers.length})
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showArchived ? 'rotate-180' : ''}`} />
+          </button>
+          {showArchived && (
+            <div className="grid grid-cols-1 gap-2 mt-2">
+              {archivedMembers.map(member => (
+                <div key={member.id} className="bg-white border border-stone-200 rounded-[6px] p-4 flex items-center gap-4 opacity-60">
+                  <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm font-medium text-stone-400 flex-shrink-0">
+                    {member.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm text-stone-500">{member.name}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-400 font-mono">Archived</span>
+                      <span className="text-xs text-stone-400 font-mono">{member.role}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => toggleActive(member)}
+                    className="px-2.5 py-1 rounded-[5px] text-xs font-mono font-medium text-green-600 hover:bg-green-50 transition-colors flex-shrink-0"
+                  >
+                    Reactivate
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add/Edit Member Modal */}
       {(showAddMember || editingMember) && (

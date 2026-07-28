@@ -64,7 +64,18 @@ export function DataProvider({ children }) {
           const d = JSON.parse(saved);
           if (Array.isArray(d.projects)) setProjects(d.projects);
           if (Array.isArray(d.tasks)) setTasks(d.tasks);
-          if (Array.isArray(d.teamMembers)) setTeamMembers(d.teamMembers);
+          if (Array.isArray(d.teamMembers)) {
+            // Merge: seed is canonical for names/roles/caps and adds new people,
+            // but each browser keeps its own active/inactive choices and any custom members it added.
+            const savedById = new Map(d.teamMembers.map(m => [m.id, m]));
+            const merged = SEED_TEAM.map(seedM => {
+              const s = savedById.get(seedM.id);
+              return s ? { ...seedM, active: s.active } : seedM;
+            });
+            const seedIds = new Set(SEED_TEAM.map(m => m.id));
+            d.teamMembers.forEach(m => { if (!seedIds.has(m.id)) merged.push(m); });
+            setTeamMembers(merged);
+          }
           if (d.historicalData) setHistoricalData(d.historicalData);
         }
       } catch { /* ignore corrupt cache */ }

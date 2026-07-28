@@ -5,25 +5,26 @@
 import { dateOffset } from '../lib/utils';
 
 export const SEED_TEAM = [
-  { id: 'tm-1',  name: 'Shubham',     email: 'shubham@spacekayak.xyz',   role: 'Head of Design',    type: 'design', maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-2',  name: 'Navaneeth',   email: 'navaneeth@spacekayak.xyz', role: 'ACD',               type: 'design', maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-3',  name: 'Aditi',       email: 'aditi@spacekayak.xyz',     role: 'Brand Designer',    type: 'design', maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-4',  name: 'Gayatri',     email: 'gayatri@spacekayak.xyz',   role: 'Illustrator',       type: 'design', maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-5',  name: 'Urja',        email: 'urja@spacekayak.xyz',      role: 'Illustrator',       type: 'design', maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-6',  name: 'Ashwin',      email: 'ashwin@spacekayak.xyz',    role: 'Web Designer',      type: 'design', maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-7',  name: 'Boris',       email: 'boris@spacekayak.xyz',     role: 'Web (Extended)',     type: 'design', maxProjects: 1, sysRole: 'team_member', active: true },
-  { id: 'tm-8',  name: 'Arina',       email: 'arina@spacekayak.xyz',     role: 'Illus. (Extended)',  type: 'design', maxProjects: 1, sysRole: 'team_member', active: true },
-  { id: 'tm-9',  name: 'Himanshu',    email: 'himanshu@spacekayak.xyz',  role: 'Developer',         type: 'dev',    maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-10', name: 'Karthick',    email: 'karthick@spacekayak.xyz',  role: 'Developer',         type: 'dev',    maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-11', name: 'Prashant',    email: 'prashant@spacekayak.xyz',  role: 'Developer',         type: 'dev',    maxProjects: 2, sysRole: 'team_member', active: true },
+  { id: 'tm-1',  name: 'Shubham',     email: 'shubham@spacekayak.xyz',   role: 'Head of Design',    type: 'design', maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-2',  name: 'Navaneeth',   email: 'navaneeth@spacekayak.xyz', role: 'ACD',               type: 'design', maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-3',  name: 'Aditi',       email: 'aditi@spacekayak.xyz',     role: 'Brand Designer',    type: 'design', maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-4',  name: 'Gayatri',     email: 'gayatri@spacekayak.xyz',   role: 'Illustrator',       type: 'design', maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-5',  name: 'Urja',        email: 'urja@spacekayak.xyz',      role: 'Illustrator',       type: 'design', maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-6',  name: 'Ashwin',      email: 'ashwin@spacekayak.xyz',    role: 'Web Designer',      type: 'design', maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-7',  name: 'Boris',       email: 'boris@spacekayak.xyz',     role: 'Web (Extended)',     type: 'design', maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-8',  name: 'Arina',       email: 'arina@spacekayak.xyz',     role: 'Illus. (Extended)',  type: 'design', maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-9',  name: 'Himanshu',    email: 'himanshu@spacekayak.xyz',  role: 'Developer',         type: 'dev',    maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-10', name: 'Karthick',    email: 'karthick@spacekayak.xyz',  role: 'Developer',         type: 'dev',    maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-11', name: 'Prashant',    email: 'prashant@spacekayak.xyz',  role: 'Developer',         type: 'dev',    maxProjects: 3, sysRole: 'team_member', active: true },
   { id: 'tm-12', name: 'Sumit Yadav', email: 'sumit@spacekayak.xyz',     role: 'Developer',         type: 'dev',    maxProjects: 3, sysRole: 'team_member', active: true },
-  { id: 'tm-13', name: 'Ayan',        email: 'ayan@spacekayak.xyz',      role: 'Developer',         type: 'dev',    maxProjects: 2, sysRole: 'team_member', active: true },
-  { id: 'tm-14', name: 'Achyut',      email: 'achyut@spacekayak.xyz',     role: 'Account Manager',   type: 'am',         maxProjects: 3, sysRole: 'admin',      active: true },
+  { id: 'tm-13', name: 'Ayan',        email: 'ayan@spacekayak.xyz',      role: 'Developer',         type: 'dev',    maxProjects: 3, sysRole: 'team_member', active: true },
+  { id: 'tm-14', name: 'Achyut',      email: 'achyut@spacekayak.xyz',     role: 'Startup Partner',   type: 'am',         maxProjects: 3, sysRole: 'admin',      active: true },
   { id: 'tm-15', name: 'Hari',        email: 'hari@spacekayak.xyz',      role: 'Account Manager',   type: 'am',         maxProjects: 3, sysRole: 'am',         active: true },
-  { id: 'tm-16', name: 'Neel',        email: 'neel@spacekayak.xyz',      role: 'Account Manager',   type: 'am',         maxProjects: 3, sysRole: 'am',         active: true },
+  { id: 'tm-16', name: 'Neel',        email: 'neel@spacekayak.xyz',      role: 'Head of Media',     type: 'am',         maxProjects: 3, sysRole: 'am',         active: true },
   // FIX P1-1: leadership added as real team members so they can log in and are not hardcoded in DataContext
   { id: 'tm-17', name: 'Paul',        email: 'p@spacekayak.xyz',      role: 'Creative Director', type: 'leadership', maxProjects: 0, sysRole: 'leadership', active: true },
   { id: 'tm-18', name: 'Saaket',      email: 's@spacekayak.xyz',    role: 'Strategy Lead',     type: 'leadership', maxProjects: 0, sysRole: 'leadership', active: true },
+  { id: 'tm-19', name: 'Sam',         email: 'sam@spacekayak.xyz',   role: 'Generalist',        type: 'design',     maxProjects: 3, sysRole: 'team_member', active: true },
 ];
 
 export const SEED_PROJECTS = [
