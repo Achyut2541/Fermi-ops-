@@ -29,15 +29,15 @@ const phaseColors = {
 export default function DashboardView() {
   const {
     viewingAs, searchQuery, showArchived, setShowArchived,
-    filterByPerson, setFilterByPerson,
+    filterByPerson,
     expandedProjects, toggleExpandProject,
     setEditingProject, setActiveTab, setSelectedProject, setTaskFilter,
     setLoggingHoursTask, setClientDelayTask,
   } = useUI();
   const {
-    projects, setProjects, tasks, tasksWithStatus, getWorkload, capacityPct,
-    canViewAllProjects, canEditProjects, allTeamNames, updateTask,
-    projectHealth, isOverloaded,
+    projects, setProjects, tasks, tasksWithStatus, capacityPct,
+    canViewAllProjects, canEditProjects, updateTask,
+    projectHealth,
   } = useData();
   const { currentUser } = useAuth();
 
@@ -49,15 +49,17 @@ export default function DashboardView() {
 
   const getProjectHealth = projectHealth;   // shared source of truth
 
+  // "My" projects = ones I'm the AM on, or have a task on. Personal to the signed-in user,
+  // even for admins/AMs — the org-wide view lives in Projects / Capacity / Board.
   let myProjects;
-  if (viewingAs || !isManagerView) {
+  {
     const myTaskProjectIds = new Set(tasks.filter(t => {
       const a = Array.isArray(t.assignedTo) ? t.assignedTo : [t.assignedTo];
       return a.includes(effectiveUser);
     }).map(t => t.projectId));
-    myProjects = projects.filter(p => myTaskProjectIds.has(p.id) && (showArchived || !p.archived));
-  } else {
-    myProjects = projects.filter(p => showArchived || !p.archived);
+    myProjects = projects.filter(p =>
+      (myTaskProjectIds.has(p.id) || p.team?.am === effectiveUser) && (showArchived || !p.archived)
+    );
   }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -105,32 +107,30 @@ export default function DashboardView() {
     }
   };
 
-  // ── MANAGER VIEW ──
+  // ── MANAGER / AM VIEW — scoped to the signed-in user's own projects ──
   if (isManagerView) {
-    const allActiveTasks = tasksWithStatus.filter(t => t.status !== 'completed');
-    const overdueTasks = allActiveTasks.filter(t => t.status === 'delayed');
-    const thisWeekTasks = allActiveTasks.filter(t => {
+    const myProjectIds = new Set(myProjects.map(p => p.id));
+    const myActiveTasks = tasksWithStatus.filter(t => myProjectIds.has(t.projectId) && t.status !== 'completed');
+    const overdueTasks = myActiveTasks.filter(t => t.status === 'delayed');
+    const thisWeekTasks = myActiveTasks.filter(t => {
       const diff = Math.ceil((new Date(t.dueDate) - today) / 86400000);
       return diff >= 0 && diff <= 7;
     });
-    const teamWl = getWorkload();
-    const overloadedMembers = teamWl.filter(isOverloaded);
     const atRiskProjects = myProjects.filter(p => {
       const h = getProjectHealth(p);
       return h.label === 'At Risk' || h.label === 'Watch';
     });
     const activeProjects = myProjects.filter(p => !p.archived && p.phase !== 'Complete');
 
-    // FIX P2: stat cards now have onClick drill-downs
     const statsData = [
       {
-        label: 'Active Projects', value: activeProjects.length,
+        label: 'My Projects', value: activeProjects.length,
         sub: atRiskProjects.length > 0 ? `${atRiskProjects.length} need attention` : 'All looking good',
         valueColor: 'text-stone-900', subColor: atRiskProjects.length > 0 ? 'text-orange-600' : 'text-green-600',
         onClick: () => setActiveTab('projects'),
       },
       {
-        label: 'Overdue Tasks', value: overdueTasks.length,
+        label: 'Overdue', value: overdueTasks.length,
         sub: overdueTasks.length > 0 ? 'Need immediate action' : 'All on schedule',
         valueColor: overdueTasks.length > 0 ? 'text-red-600' : 'text-stone-900',
         subColor: overdueTasks.length > 0 ? 'text-red-500' : 'text-green-600',
@@ -142,11 +142,9 @@ export default function DashboardView() {
         onClick: () => setActiveTab('tasks'),
       },
       {
-        label: 'Team Overloaded', value: overloadedMembers.length,
-        sub: overloadedMembers.length > 0 ? overloadedMembers.slice(0, 2).map(m => m.name).join(', ') : 'Everyone in good shape',
-        valueColor: overloadedMembers.length > 0 ? 'text-orange-600' : 'text-stone-900',
-        subColor: overloadedMembers.length > 0 ? 'text-orange-500' : 'text-green-600',
-        onClick: () => setActiveTab('capacity'),
+        label: 'Open Tasks', value: myActiveTasks.length,
+        sub: 'Across your projects', valueColor: 'text-stone-900', subColor: 'text-stone-400',
+        onClick: () => setActiveTab('tasks'),
       },
     ];
 
@@ -158,14 +156,7 @@ export default function DashboardView() {
             <p className="text-sm text-stone-400 mt-0.5 font-mono">{today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
           </div>
           <div className="flex items-center gap-2">
-            {canViewAllProjects(currentUser) && !viewingAs && (
-              <select value={filterByPerson} onChange={e => setFilterByPerson(e.target.value)}
-                className="px-3 py-2 text-sm border border-stone-200 rounded-[5px] bg-white focus:border-indigo-500 focus:outline-none">
-                <option value="">All members</option>
-                {allTeamNames.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-            )}
-            {canViewAllProjects(currentUser) && (  /* FIX P2: was canEditProjects — AMs should see archived too */
+            {canViewAllProjects(currentUser) && (
               <button onClick={() => setShowArchived(!showArchived)}
                 className={`px-3 py-2 text-sm rounded-[5px] font-medium transition-colors ${showArchived ? 'bg-gray-200 text-stone-900' : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-50'}`}>
                 {showArchived ? 'Hide Archived' : 'Show Archived'}
@@ -178,15 +169,15 @@ export default function DashboardView() {
 
         <AttentionBanner
           overdueTasks={overdueTasks}
-          overloadedMembers={overloadedMembers}
+          overloadedMembers={[]}
           projects={projects}
           capacityPct={capacityPct}
         />
 
-        {/* Portfolio Health */}
+        {/* Your Projects */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-light text-stone-900 font-serif">Portfolio Health</h3>
+            <h3 className="text-lg font-light text-stone-900 font-serif">Your Projects</h3>
             <span className="text-xs text-stone-400 font-mono">{myProjects.length} {myProjects.length === 1 ? 'project' : 'projects'}</span>
           </div>
           {myProjects.length === 0 ? (
