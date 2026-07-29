@@ -56,51 +56,13 @@ export function DataProvider({ children }) {
         if (dbH?.length > 0) setHistoricalData(JSON.parse(dbH[0].payload || '{}'));
       } catch { /* defaults */ }
 
-      // Local persistence — restore prior edits so changes survive a page refresh
-      // even with an empty backend. Takes precedence over seed data.
-      try {
-        const saved = localStorage.getItem('fermi_data_v1');
-        if (saved) {
-          const d = JSON.parse(saved);
-          // Keep saved projects/tasks, but append any new ones added to seed (by id) so
-          // newly-added projects show up without wiping the browser's existing edits.
-          if (Array.isArray(d.projects)) {
-            const ids = new Set(d.projects.map(p => p.id));
-            setProjects([...d.projects, ...SEED_PROJECTS.filter(p => !ids.has(p.id))]);
-          }
-          if (Array.isArray(d.tasks)) {
-            const ids = new Set(d.tasks.map(t => t.id));
-            setTasks([...d.tasks, ...SEED_TASKS.filter(t => !ids.has(t.id))]);
-          }
-          if (Array.isArray(d.teamMembers)) {
-            // Merge: seed is canonical for names/roles/caps and adds new people,
-            // but each browser keeps its own active/inactive choices and any custom members it added.
-            const savedById = new Map(d.teamMembers.map(m => [m.id, m]));
-            const merged = SEED_TEAM.map(seedM => {
-              const s = savedById.get(seedM.id);
-              return s ? { ...seedM, active: s.active } : seedM;
-            });
-            const seedIds = new Set(SEED_TEAM.map(m => m.id));
-            d.teamMembers.forEach(m => { if (!seedIds.has(m.id)) merged.push(m); });
-            setTeamMembers(merged);
-          }
-          if (d.historicalData) setHistoricalData(d.historicalData);
-        }
-      } catch { /* ignore corrupt cache */ }
-
+      // Supabase is the single source of truth — shared across everyone, no local override.
+      // Seed (the initial useState values) is only a fallback when the database is empty;
+      // the debounced save effects below bootstrap an empty DB on first load.
       setDataLoaded(true);
     };
     boot();
   }, []);
-
-  // Persist every mutation locally (deactivations, reassignments, completions, edits)
-  // so nothing resets on refresh. Only writes after initial load to avoid clobbering saved data.
-  useEffect(() => {
-    if (!dataLoaded) return;
-    try {
-      localStorage.setItem('fermi_data_v1', JSON.stringify({ projects, tasks, teamMembers, historicalData }));
-    } catch { /* storage full or disabled */ }
-  }, [dataLoaded, projects, tasks, teamMembers, historicalData]);
 
   // FIX P0-1: resolve currentUser from auth email once team data is loaded
   useEffect(() => {
@@ -322,6 +284,7 @@ export function DataProvider({ children }) {
   }, []);
 
   const deleteProject = useCallback((id) => {
+    supabase.from('tasks').delete().eq('projectId', id);   // clear the project's tasks from the DB too
     supabase.from('projects').delete().eq('id', id);
     setProjects(prev => prev.filter(p => p.id !== id));
     setTasks(prev => prev.filter(t => t.projectId !== id));
