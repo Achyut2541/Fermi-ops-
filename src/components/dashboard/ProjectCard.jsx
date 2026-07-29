@@ -17,7 +17,13 @@ export default function ProjectCard({
 }) {
   return (
     <div className="bg-stone-100 border border-stone-200 rounded-[6px] overflow-hidden hover:-translate-y-px transition-transform">
-      <div className="p-4 cursor-pointer hover:bg-stone-200/70 transition-colors" onClick={onToggle}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onToggle}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
+        className="p-4 cursor-pointer hover:bg-stone-200/70 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${health.dot}`} />

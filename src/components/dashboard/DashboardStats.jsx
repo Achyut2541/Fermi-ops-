@@ -6,8 +6,11 @@ export default function DashboardStats({ stats }) {
         <div
           key={s.label}
           onClick={s.onClick}
+          role={s.onClick ? 'button' : undefined}
+          tabIndex={s.onClick ? 0 : undefined}
+          onKeyDown={s.onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.onClick(); } }) : undefined}
           className={`bg-stone-100 border border-stone-200 rounded-[6px] p-4 hover:-translate-y-px transition-transform
-            ${s.onClick ? 'cursor-pointer hover:border-indigo-300 hover:bg-stone-50' : ''}`}
+            ${s.onClick ? 'cursor-pointer hover:border-indigo-300 hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500' : ''}`}
         >
           <div className="gravity-label mb-2">{s.label}</div>
           <div className={`text-[1.9rem] font-light font-serif mb-1 ${s.valueColor}`}>{s.value}</div>

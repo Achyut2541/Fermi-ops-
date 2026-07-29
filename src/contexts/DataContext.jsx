@@ -22,6 +22,7 @@ export function DataProvider({ children }) {
   const [historicalData, setHistoricalData] = useState(SEED_HISTORICAL);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [slackToast, setSlackToast] = useState(null);
+  const [saveError, setSaveError] = useState(false);   // true when a DB write fails after retries
 
   const projectSaveTimer = useRef(null);
   const taskSaveTimer = useRef(null);
@@ -34,6 +35,20 @@ export function DataProvider({ children }) {
     setSlackToast(status);
     if (slackToastTimer.current) clearTimeout(slackToastTimer.current);
     slackToastTimer.current = setTimeout(() => setSlackToast(null), 3000);
+  }, []);
+
+  // Persist rows to Supabase with retry + backoff. Flags saveError only after all retries fail.
+  const saveRows = useCallback(async (table, rows) => {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        for (const r of rows) await supabase.from(table).upsert(r).select();
+        setSaveError(false);
+        return;
+      } catch (e) {
+        if (attempt === 3) { console.error(`❌ ${table} save failed after retries:`, e); setSaveError(true); }
+        else await new Promise(res => setTimeout(res, 500 * attempt));
+      }
+    }
   }, []);
 
   // ── Boot: load from Supabase ───────────────────────────────────────────
@@ -93,32 +108,23 @@ export function DataProvider({ children }) {
   useEffect(() => {
     if (!dataLoaded || !projects.length) return;
     if (projectSaveTimer.current) clearTimeout(projectSaveTimer.current);
-    projectSaveTimer.current = setTimeout(async () => {
-      try { for (const p of projects) await supabase.from('projects').upsert(p).select(); }
-      catch (e) { console.error('❌ Project save failed:', e); }
-    }, 1500);
+    projectSaveTimer.current = setTimeout(() => saveRows('projects', projects), 1500);
     return () => clearTimeout(projectSaveTimer.current);
-  }, [projects, dataLoaded]);
+  }, [projects, dataLoaded, saveRows]);
 
   useEffect(() => {
     if (!dataLoaded || !tasks.length) return;
     if (taskSaveTimer.current) clearTimeout(taskSaveTimer.current);
-    taskSaveTimer.current = setTimeout(async () => {
-      try { for (const t of tasks) await supabase.from('tasks').upsert(t).select(); }
-      catch (e) { console.error('❌ Task save failed:', e); }
-    }, 1500);
+    taskSaveTimer.current = setTimeout(() => saveRows('tasks', tasks), 1500);
     return () => clearTimeout(taskSaveTimer.current);
-  }, [tasks, dataLoaded]);
+  }, [tasks, dataLoaded, saveRows]);
 
   useEffect(() => {
     if (!dataLoaded || !teamMembers.length) return;
     if (teamSaveTimer.current) clearTimeout(teamSaveTimer.current);
-    teamSaveTimer.current = setTimeout(async () => {
-      try { for (const m of teamMembers) await supabase.from('team_members').upsert(m).select(); }
-      catch { /* skip */ }
-    }, 2000);
+    teamSaveTimer.current = setTimeout(() => saveRows('team_members', teamMembers), 2000);
     return () => clearTimeout(teamSaveTimer.current);
-  }, [teamMembers, dataLoaded]);
+  }, [teamMembers, dataLoaded, saveRows]);
 
   useEffect(() => {
     if (!dataLoaded) return;
@@ -503,7 +509,7 @@ export function DataProvider({ children }) {
   return (
     <DataContext.Provider value={{
       projects, setProjects, tasks, setTasks, teamMembers, setTeamMembers,
-      historicalData, setHistoricalData, dataLoaded, slackToast,
+      historicalData, setHistoricalData, dataLoaded, slackToast, saveError,
       syncEngine: syncEngineRef,    // FIX P0-2: expose as ref so SettingsView always gets current instance
       activeMembers, designTeam, devTeam, accountManagers, allTeamNames,
       userRoles, teamRoles, getUserRole, canEditProjects, canViewAllProjects, canViewAs,

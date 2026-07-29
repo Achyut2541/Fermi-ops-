@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -6,10 +6,17 @@ import LogHoursModal from '../modals/LogHoursModal';
 import ClientDelayModal from '../modals/ClientDelayModal';
 import Toast from '../ui/Toast';
 import { useUI } from '../../contexts/UIContext';
+import { useData } from '../../contexts/DataContext';
 
 export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { appToast, setAppToast } = useUI();
+  const { saveError } = useData();
+
+  // Surface DB write failures to the user (writes retry with backoff first).
+  useEffect(() => {
+    if (saveError) setAppToast({ message: 'Some changes couldn’t be saved — check your connection.', type: 'error' });
+  }, [saveError, setAppToast]);
 
   return (
     <div className="min-h-screen bg-white font-sans">

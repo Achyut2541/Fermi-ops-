@@ -6,9 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Fermi — Operations, Capacity & Project Intelligence" />
     <title>Fermi Ops</title>
+    <style>
+      /* App-shell loader — shown until the React bundle mounts and replaces #root */
+      #boot-loader {
+        position: fixed; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 16px;
+        background: #ffffff; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      }
+      #boot-loader .mark {
+        width: 40px; height: 40px; border-radius: 8px; background: #3f6b52;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-weight: 800; font-size: 15px;
+      }
+      #boot-loader .spin {
+        width: 22px; height: 22px; border-radius: 50%;
+        border: 2px solid #e7e5e4; border-top-color: #3f6b52;
+        animation: bl-spin 0.7s linear infinite;
+      }
+      @keyframes bl-spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body class="noise-overlay">
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-loader">
+        <div class="mark">F</div>
+        <div class="spin"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
