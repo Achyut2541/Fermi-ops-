@@ -205,16 +205,14 @@ export function DataProvider({ children }) {
   const getWorkload = useCallback(() => workloadData, [workloadData]);
 
   const capacityPct = useCallback((m) => {
-    // Documented rule: higher of (projects / role max) or (weighted task load / role max).
-    // Project over-allocation (e.g. 2 projects against a cap of 1) counts even with no active
-    // tasks — the Projects vs Task-load bars in the UI show which one is driving the number.
-    const projPct = m.maxProjects > 0 ? Math.round((m.projectCount / m.maxProjects) * 100) : 0;
-    // Weighted active task load (Critical 2.0 · High 1.5 · Medium 1.0 · Low 0.5) vs a role capacity of 8 units.
+    // Capacity = active task workload only, weighted by priority (Critical 2.0 · High 1.5 ·
+    // Medium 1.0 · Low 0.5) against a role capacity of 8 units. Someone with no active tasks
+    // is 0% regardless of how many projects they're nominally on — project allocation is shown
+    // separately as "N/M projects" and never by itself makes someone "at capacity".
     const weighted = (m.taskList || [])
       .filter(t => t.status !== 'completed')
       .reduce((s, t) => s + (PRIORITY_WEIGHT[t.priority] ?? 1), 0);
-    const taskPct = Math.min(150, Math.round((weighted / 8) * 100));
-    return Math.max(projPct, taskPct);
+    return Math.min(150, Math.round((weighted / 8) * 100));
   }, []);
 
   const capacityLabel = useCallback((pct) => {

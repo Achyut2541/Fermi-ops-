@@ -81,8 +81,8 @@ export default function CapacityView() {
       {/* How it works */}
       <div className="bg-stone-50 border border-stone-200 rounded-[6px] p-4 text-xs text-stone-500 font-mono">
         <span className="font-medium text-stone-700">Capacity: </span>
-        higher of (projects / role max) or (weighted task load / role max).
-        Weights: Critical = 2.0 · High = 1.5 · Medium = 1.0 · Low = 0.5
+        weighted active task load vs a role capacity of 8 units. No active tasks = 0% (available).
+        Weights: Critical = 2.0 · High = 1.5 · Medium = 1.0 · Low = 0.5. Project allocation (N/M) is shown separately.
       </div>
 
       {/* Member cards */}
