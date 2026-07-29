@@ -243,7 +243,7 @@ export default function KanbanView() {
         {columns.map(({ member, tasks }) => {
           const cap = memberCapacity(member.name);
           const isOver = dragOverCol === member.name;
-          const capColor = cap >= 120 ? 'bg-red-500' : cap >= 100 ? 'bg-orange-400' : 'bg-indigo-600';
+          const capColor = cap > 100 ? 'bg-red-500' : cap >= 75 ? 'bg-orange-400' : 'bg-indigo-600';
           return (
             <div
               key={member.id}
@@ -270,7 +270,7 @@ export default function KanbanView() {
                   <div className="flex-1 h-1.5 bg-stone-200 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full ${capColor}`} style={{ width: `${Math.min(cap, 100)}%` }} />
                   </div>
-                  <span className={`text-[0.65rem] font-mono tabular-nums flex-shrink-0 ${cap >= 100 ? 'text-orange-600' : 'text-stone-400'}`}>
+                  <span className={`text-[0.65rem] font-mono tabular-nums flex-shrink-0 ${cap > 100 ? 'text-red-600' : cap >= 75 ? 'text-orange-600' : 'text-stone-400'}`}>
                     {cap}%
                   </span>
                 </div>

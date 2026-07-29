@@ -11,13 +11,12 @@ import { useAuth } from './AuthContext';
 const DataContext = createContext(null);
 
 // Priority weights for weighted task-load capacity.
-// Capacity model — three distinct concepts:
-//   Task   = count of active work items
-//   Stress = hours of active work (the demand placed on a person)
-//   Strain = that load vs a nominal weekly capacity (the % / overload signal)
-//   Pressure = how many of those are critical or overdue (urgency, shown separately)
-export const WEEKLY_HOURS = 40;      // one person's nominal weekly throughput
-const DEFAULT_TASK_HOURS = 6;        // assumed effort when a task has no estimate
+// Capacity model — duration-independent (hours are unreliable in creative work):
+//   Strain   = how many active projects a person is split across, vs a comfortable plate.
+//   Task     = count of active tasks (a secondary readout, shown but not driving the %).
+//   Pressure = critical + overdue tasks (urgency, shown separately).
+export const FULL_PLATE = 4;         // a comfortable number of concurrent projects = 100% capacity
+const DEFAULT_TASK_HOURS = 6;        // kept only for the informational hours detail
 
 export function DataProvider({ children }) {
   const { currentUser, setCurrentUser, authEmail } = useAuth();  // FIX P0-1: get authEmail
@@ -218,22 +217,22 @@ export function DataProvider({ children }) {
 
   const getWorkload = useCallback(() => workloadData, [workloadData]);
 
-  // STRAIN = hours of active work vs a nominal weekly capacity. 100% = a full week queued.
-  // Uses estimatedHours summed in workloadData (with a default for unestimated tasks).
+  // STRAIN = active projects the person is split across vs a comfortable plate (FULL_PLATE).
+  // 100% = a full plate; over 100% = more projects than they can comfortably carry.
   const capacityPct = useCallback((m) => {
-    return Math.min(300, Math.round(((m.estimatedHours || 0) / WEEKLY_HOURS) * 100));
+    return Math.min(300, Math.round(((m.projectCount || 0) / FULL_PLATE) * 100));
   }, []);
 
   const capacityLabel = useCallback((pct) => {
     if (pct === 0) return { label: 'Available', color: 'bg-emerald-50 text-emerald-700' };
-    if (pct < 60) return { label: 'Has capacity', color: 'bg-indigo-50 text-indigo-700' };   // < ~half a week
-    if (pct < 100) return { label: 'Busy', color: 'bg-amber-50 text-amber-700' };            // most of a week
-    if (pct < 120) return { label: 'At capacity', color: 'bg-orange-50 text-orange-700' };   // ~a full week
-    return { label: 'Overloaded', color: 'bg-red-50 text-red-700' };                          // more than a week backed up
+    if (pct < 75) return { label: 'Has capacity', color: 'bg-indigo-50 text-indigo-700' };
+    if (pct < 100) return { label: 'Busy', color: 'bg-amber-50 text-amber-700' };
+    if (pct <= 100) return { label: 'At capacity', color: 'bg-orange-50 text-orange-700' };  // exactly a full plate
+    return { label: 'Overloaded', color: 'bg-red-50 text-red-700' };                          // more projects than a full plate
   }, []);
 
-  // Single source of truth for "is this person overloaded" — more than ~1.2 weeks of work queued.
-  const isOverloaded = useCallback((m) => capacityPct(m) >= 120, [capacityPct]);
+  // Single source of truth for "is this person overloaded" — carrying more than a full plate of projects.
+  const isOverloaded = useCallback((m) => capacityPct(m) > 100, [capacityPct]);
 
   // Single source of truth for project health. rank drives ordering (0 = most urgent).
   const projectHealth = useCallback((project) => {
