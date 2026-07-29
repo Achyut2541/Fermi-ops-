@@ -17,8 +17,14 @@ import SettingsView from './components/settings/SettingsView';
 
 function TabRouter() {
   const { activeTab } = useUI();
+  const { getUserRole } = useData();
+  const { currentUser } = useAuth();
+  const isAdmin = getUserRole(currentUser) === 'admin';
 
-  switch (activeTab) {
+  // Risk & Resources and Crisis Nav are admin-only — fall back to the dashboard otherwise.
+  const tab = (!isAdmin && (activeTab === 'risk' || activeTab === 'crisis')) ? 'dashboard' : activeTab;
+
+  switch (tab) {
     case 'dashboard': return <DashboardView />;
     case 'projects': return <ProjectsView />;
     case 'tasks': return <TasksView />;

@@ -17,9 +17,10 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ onNavigate }) {
   const { activeTab, setActiveTab } = useUI();
-  const { projects, tasks, activeMembers, canEditProjects, canViewAllProjects } = useData();
+  const { projects, tasks, activeMembers, canEditProjects, canViewAllProjects, getUserRole } = useData();
   const { currentUser } = useAuth();
   const isManager = canViewAllProjects(currentUser);
+  const isAdmin = getUserRole(currentUser) === 'admin';   // Risk & Crisis are admin-only tools
 
   // Team members only see their own task counts
   const myTasks = isManager
@@ -43,7 +44,7 @@ export default function Sidebar({ onNavigate }) {
   };
 
   const items = [
-    ...NAV_ITEMS,
+    ...NAV_ITEMS.filter(it => ((it.id === 'risk' || it.id === 'crisis') ? isAdmin : true)),
     ...(canEditProjects(currentUser) ? [{ id: 'team', icon: Users, label: 'Team', showCount: 'team' }] : []),
   ];
 
