@@ -11,7 +11,13 @@ import { useAuth } from './AuthContext';
 const DataContext = createContext(null);
 
 // Priority weights for weighted task-load capacity.
-const PRIORITY_WEIGHT = { critical: 2, high: 1.5, medium: 1, low: 0.5 };
+// Capacity model — three distinct concepts:
+//   Task   = count of active work items
+//   Stress = hours of active work (the demand placed on a person)
+//   Strain = that load vs a nominal weekly capacity (the % / overload signal)
+//   Pressure = how many of those are critical or overdue (urgency, shown separately)
+export const WEEKLY_HOURS = 40;      // one person's nominal weekly throughput
+const DEFAULT_TASK_HOURS = 6;        // assumed effort when a task has no estimate
 
 export function DataProvider({ children }) {
   const { currentUser, setCurrentUser, authEmail } = useAuth();  // FIX P0-1: get authEmail
@@ -177,7 +183,7 @@ export function DataProvider({ children }) {
     const wl = {};
     allTeamNames.forEach(m => {
       const info = teamRoles[m] || { role: 'Unknown', type: 'design', maxProjects: 2 };
-      wl[m] = { name: m, ...info, projects: [], activeTasks: 0, delayedTasks: 0, taskList: [], projectCount: 0, estimatedHours: 0, actualHours: 0, thisWeekTasks: [], nextWeekTasks: [], totalHours: 0 };
+      wl[m] = { name: m, ...info, projects: [], activeTasks: 0, delayedTasks: 0, criticalTasks: 0, taskList: [], projectCount: 0, estimatedHours: 0, actualHours: 0, thisWeekTasks: [], nextWeekTasks: [], totalHours: 0 };
     });
 
     const active = projects.filter(p => p.phase !== 'Complete');
@@ -196,7 +202,9 @@ export function DataProvider({ children }) {
         wl[name].taskList.push(t);
         if (t.status !== 'completed') {
           wl[name].activeTasks++;
-          if (t.estimatedHours) { wl[name].estimatedHours += t.estimatedHours; wl[name].totalHours += t.estimatedHours; }
+          const hrs = t.estimatedHours || DEFAULT_TASK_HOURS;   // count every task's effort, default when unestimated
+          wl[name].estimatedHours += hrs; wl[name].totalHours += hrs;
+          if (t.priority === 'critical') wl[name].criticalTasks++;
           if (isTaskInWeek(t, 'this-week')) wl[name].thisWeekTasks.push(t);
           if (isTaskInWeek(t, 'next-week')) wl[name].nextWeekTasks.push(t);
         }
@@ -210,27 +218,22 @@ export function DataProvider({ children }) {
 
   const getWorkload = useCallback(() => workloadData, [workloadData]);
 
+  // STRAIN = hours of active work vs a nominal weekly capacity. 100% = a full week queued.
+  // Uses estimatedHours summed in workloadData (with a default for unestimated tasks).
   const capacityPct = useCallback((m) => {
-    // Capacity = active task workload only, weighted by priority (Critical 2.0 · High 1.5 ·
-    // Medium 1.0 · Low 0.5) against a role capacity of 8 units. Someone with no active tasks
-    // is 0% regardless of how many projects they're nominally on — project allocation is shown
-    // separately as "N/M projects" and never by itself makes someone "at capacity".
-    const weighted = (m.taskList || [])
-      .filter(t => t.status !== 'completed')
-      .reduce((s, t) => s + (PRIORITY_WEIGHT[t.priority] ?? 1), 0);
-    return Math.min(150, Math.round((weighted / 8) * 100));
+    return Math.min(300, Math.round(((m.estimatedHours || 0) / WEEKLY_HOURS) * 100));
   }, []);
 
   const capacityLabel = useCallback((pct) => {
-    if (pct === 0) return { label: 'Available for new work', color: 'bg-emerald-50 text-emerald-700' };
-    if (pct < 50) return { label: 'Has capacity', color: 'bg-indigo-50 text-indigo-700' };
-    if (pct < 80) return { label: 'Busy', color: 'bg-amber-50 text-amber-700' };
-    if (pct < 100) return { label: 'At capacity', color: 'bg-orange-50 text-orange-700' };
-    return { label: 'Overloaded', color: 'bg-red-50 text-red-700' };
+    if (pct === 0) return { label: 'Available', color: 'bg-emerald-50 text-emerald-700' };
+    if (pct < 60) return { label: 'Has capacity', color: 'bg-indigo-50 text-indigo-700' };   // < ~half a week
+    if (pct < 100) return { label: 'Busy', color: 'bg-amber-50 text-amber-700' };            // most of a week
+    if (pct < 120) return { label: 'At capacity', color: 'bg-orange-50 text-orange-700' };   // ~a full week
+    return { label: 'Overloaded', color: 'bg-red-50 text-red-700' };                          // more than a week backed up
   }, []);
 
-  // Single source of truth for "is this person overloaded" (used by dashboard, capacity, risk).
-  const isOverloaded = useCallback((m) => capacityPct(m) >= 100, [capacityPct]);
+  // Single source of truth for "is this person overloaded" — more than ~1.2 weeks of work queued.
+  const isOverloaded = useCallback((m) => capacityPct(m) >= 120, [capacityPct]);
 
   // Single source of truth for project health. rank drives ordering (0 = most urgent).
   const projectHealth = useCallback((project) => {

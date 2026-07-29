@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Circle, Users } from 'lucide-react';
 import { useUI } from '../../contexts/UIContext';
-import { useData } from '../../contexts/DataContext';
+import { useData, WEEKLY_HOURS } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { fmt, daysUntil, workingHoursUntil } from '../../lib/utils';
 import { TASK_STATUSES, PRIORITIES } from '../../data/constants';
@@ -21,9 +21,9 @@ export default function CapacityView() {
   const canEdit = canEditProjects(currentUser);
 
   const workload = getWorkload().sort((a, b) => capacityPct(b) - capacityPct(a));
-  const overloadedList  = workload.filter(m => capacityPct(m) >= 100);
-  const atCapacityList  = workload.filter(m => capacityPct(m) >= 80 && capacityPct(m) < 100);
-  const hasHeadroomList = workload.filter(m => capacityPct(m) > 0 && capacityPct(m) < 80);   // 1–79% (no longer drops 50–79)
+  const overloadedList  = workload.filter(m => capacityPct(m) >= 120);
+  const atCapacityList  = workload.filter(m => capacityPct(m) >= 100 && capacityPct(m) < 120);
+  const hasHeadroomList = workload.filter(m => capacityPct(m) > 0 && capacityPct(m) < 100);
   const availableList   = workload.filter(m => capacityPct(m) === 0);
 
   const filterGroups = [
@@ -80,9 +80,9 @@ export default function CapacityView() {
 
       {/* How it works */}
       <div className="bg-stone-50 border border-stone-200 rounded-[6px] p-4 text-xs text-stone-500 font-mono">
-        <span className="font-medium text-stone-700">Capacity: </span>
-        weighted active task load vs a role capacity of 8 units. No active tasks = 0% (available).
-        Weights: Critical = 2.0 · High = 1.5 · Medium = 1.0 · Low = 0.5. Project allocation (N/M) is shown separately.
+        <span className="font-medium text-stone-700">Strain: </span>
+        active work hours vs a {WEEKLY_HOURS}h week. 100% = a full week of work queued · over 120% = overloaded.
+        Stress = hours of work; Pressure = critical / overdue tasks (shown separately). Project allocation is shown as chips.
       </div>
 
       {/* Member cards */}
@@ -96,9 +96,8 @@ export default function CapacityView() {
           {visibleMembers.map(m => {
             const pct        = capacityPct(m);
             const cl         = capacityLabel(pct);
-            const barColor   = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-orange-500' : pct >= 50 ? 'bg-yellow-500' : pct > 0 ? 'bg-green-500' : 'bg-stone-300';
-            const projectPct = m.maxProjects > 0 ? Math.round((m.projectCount / m.maxProjects) * 100) : 0;
-            const taskLoadPct = m.activeTasks === 0 ? 0 : Math.min(100, Math.round((m.activeTasks / 8) * 100));
+            const barColor   = pct >= 120 ? 'bg-red-500' : pct >= 100 ? 'bg-orange-500' : pct >= 60 ? 'bg-yellow-500' : pct > 0 ? 'bg-green-500' : 'bg-stone-300';
+            const pressure   = (m.criticalTasks || 0) + (m.delayedTasks || 0);   // urgency signal, separate from strain
             const activeTasks = weekView === 'this-week'
               ? m.thisWeekTasks.filter(t => t.status !== 'completed')
               : weekView === 'next-week'
@@ -107,7 +106,7 @@ export default function CapacityView() {
             const isExpanded  = expandedMember === m.name;
 
             return (
-              <div key={m.name} className={`bg-white rounded-[6px] border transition-all ${pct >= 100 ? 'border-red-200' : pct >= 80 ? 'border-orange-200' : isExpanded ? 'border-indigo-300' : 'border-stone-200'}`}>
+              <div key={m.name} className={`bg-white rounded-[6px] border transition-all ${pct >= 120 ? 'border-red-200' : pct >= 100 ? 'border-orange-200' : isExpanded ? 'border-indigo-300' : 'border-stone-200'}`}>
                 {/* Clickable header */}
                 <button className="w-full text-left p-5" onClick={() => setExpandedMember(isExpanded ? null : m.name)}>
                   <div className="flex items-center justify-between mb-3">
@@ -129,26 +128,22 @@ export default function CapacityView() {
                     <div className={`h-full transition-all ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                   </div>
 
-                  {/* Sub-bars */}
+                  {/* Stress (hours of work) + Pressure (urgency) — two distinct signals */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-stone-50 rounded-[5px] p-3">
-                      <div className="flex justify-between text-xs font-mono text-stone-500 mb-1.5">
-                        <span>Projects</span>
-                        <span className={projectPct >= 100 ? 'text-red-600' : ''}>{m.projectCount} / {m.maxProjects}</span>
+                      <div className="flex justify-between text-xs font-mono text-stone-500 mb-1">
+                        <span>Workload</span>
+                        <span className={pct >= 120 ? 'text-red-600' : pct >= 100 ? 'text-orange-600' : ''}>{m.estimatedHours}h / {WEEKLY_HOURS}h wk</span>
                       </div>
-                      <div className="w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
-                        <div className={`h-full ${projectPct >= 100 ? 'bg-red-500' : projectPct >= 80 ? 'bg-orange-500' : 'bg-indigo-500'}`}
-                          style={{ width: `${Math.min(projectPct, 100)}%` }} />
-                      </div>
+                      <div className="text-xs text-stone-400 font-mono">{m.activeTasks} active task{m.activeTasks !== 1 ? 's' : ''}</div>
                     </div>
                     <div className="bg-stone-50 rounded-[5px] p-3">
-                      <div className="flex justify-between text-xs font-mono text-stone-500 mb-1.5">
-                        <span>Task load</span>
-                        <span className={taskLoadPct >= 100 ? 'text-red-600' : ''}>{m.activeTasks} active</span>
+                      <div className="flex justify-between text-xs font-mono text-stone-500 mb-1">
+                        <span>Pressure</span>
+                        <span className={pressure > 0 ? 'text-red-600' : 'text-green-600'}>{pressure === 0 ? 'none' : `${pressure} urgent`}</span>
                       </div>
-                      <div className="w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
-                        <div className={`h-full ${taskLoadPct >= 100 ? 'bg-red-500' : taskLoadPct >= 80 ? 'bg-orange-500' : 'bg-purple-400'}`}
-                          style={{ width: `${Math.min(taskLoadPct, 100)}%` }} />
+                      <div className="text-xs text-stone-400 font-mono">
+                        {m.criticalTasks || 0} critical · {m.delayedTasks || 0} overdue
                       </div>
                     </div>
                   </div>
