@@ -294,8 +294,8 @@ export function DataProvider({ children }) {
   }, []);
 
   const deleteProject = useCallback((id) => {
-    supabase.from('tasks').delete().eq('projectId', id);   // clear the project's tasks from the DB too
-    supabase.from('projects').delete().eq('id', id);
+    supabase.from('tasks').delete().eq('projectId', id).then(() => {});   // clear the project's tasks from the DB too
+    supabase.from('projects').delete().eq('id', id).then(() => {});
     setProjects(prev => prev.filter(p => p.id !== id));
     setTasks(prev => prev.filter(t => t.projectId !== id));
   }, []);
@@ -370,7 +370,7 @@ export function DataProvider({ children }) {
   }, [tasks]);
 
   const deleteTask = useCallback((id) => {
-    supabase.from('tasks').delete().eq('id', id);
+    supabase.from('tasks').delete().eq('id', id).then(() => {});
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 
@@ -405,15 +405,15 @@ export function DataProvider({ children }) {
   // ── External vendor directory (separate from the internal team) ──
   const addVendor = useCallback((vendor) => {
     const v = { id: `vendor-${Date.now()}`, active: true, ...vendor };
-    supabase.from('vendors').upsert(v).select();
+    supabase.from('vendors').upsert(v).select().then(() => {});   // .then() actually fires the request
     setVendors(prev => [...prev, v]);
   }, []);
   const updateVendor = useCallback((vendor) => {
-    supabase.from('vendors').upsert(vendor).select();
+    supabase.from('vendors').upsert(vendor).select().then(() => {});
     setVendors(prev => prev.map(v => (v.id === vendor.id ? vendor : v)));
   }, []);
   const deleteVendor = useCallback((id) => {
-    supabase.from('vendors').delete().eq('id', id);
+    supabase.from('vendors').delete().eq('id', id).then(() => {});
     setVendors(prev => prev.filter(v => v.id !== id));
   }, []);
 
