@@ -23,6 +23,7 @@ export function DataProvider({ children }) {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [slackToast, setSlackToast] = useState(null);
   const [saveError, setSaveError] = useState(false);   // true when a DB write fails after retries
+  const [vendors, setVendors] = useState([]);          // external vendor/freelancer directory
 
   const projectSaveTimer = useRef(null);
   const taskSaveTimer = useRef(null);
@@ -69,6 +70,11 @@ export function DataProvider({ children }) {
       try {
         const { data: dbH } = await supabase.from('historical_data').select();
         if (dbH?.length > 0) setHistoricalData(JSON.parse(dbH[0].payload || '{}'));
+      } catch { /* defaults */ }
+
+      try {
+        const { data: dbV } = await supabase.from('vendors').select();
+        if (Array.isArray(dbV)) setVendors(dbV);
       } catch { /* defaults */ }
 
       // Supabase is the single source of truth — shared across everyone, no local override.
@@ -396,6 +402,21 @@ export function DataProvider({ children }) {
     setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, active: true } : m));
   }, []);
 
+  // ── External vendor directory (separate from the internal team) ──
+  const addVendor = useCallback((vendor) => {
+    const v = { id: `vendor-${Date.now()}`, active: true, ...vendor };
+    supabase.from('vendors').upsert(v).select();
+    setVendors(prev => [...prev, v]);
+  }, []);
+  const updateVendor = useCallback((vendor) => {
+    supabase.from('vendors').upsert(vendor).select();
+    setVendors(prev => prev.map(v => (v.id === vendor.id ? vendor : v)));
+  }, []);
+  const deleteVendor = useCallback((id) => {
+    supabase.from('vendors').delete().eq('id', id);
+    setVendors(prev => prev.filter(v => v.id !== id));
+  }, []);
+
   const assessTaskRisk = useCallback((task) => {
     let score = 0;
     const reasons = [];
@@ -493,8 +514,8 @@ export function DataProvider({ children }) {
     const sc = cat?.scenarios.find(s => s.id === crisisScenario);
     if (!sc) return null;
     const teamWl = workloadData;
-    const overloaded = teamWl.filter(m => capacityPct(m) >= 90).map(m => m.name);
-    const available = teamWl.filter(m => capacityPct(m) < 50 && m.activeTasks > 0).map(m => m.name);
+    const overloaded = teamWl.filter(m => capacityPct(m) >= 100).map(m => m.name);   // standard overload threshold
+    const available = teamWl.filter(m => capacityPct(m) < 50).map(m => m.name);       // anyone with headroom (incl. no active tasks)
 
     let primaryAction, tlImpact, costImpact;
     if (timelineFlex > 70) { primaryAction = 'Extend timeline to protect quality — cheapest fix'; tlImpact = '+5-10 days'; costImpact = '$0'; }
@@ -516,6 +537,7 @@ export function DataProvider({ children }) {
       addProject, updateProject, deleteProject,
       addTask, updateTask, completeTaskWithHours, logClientDelay, deleteTask,
       addTeamMember, updateTeamMember, deactivateMember, reactivateMember,
+      vendors, addVendor, updateVendor, deleteVendor,
       assessTaskRisk, suggestReassignment,
       generateTasksFromTemplate, triggerSlackToast,
       getRawStatus, delayedCount, filteredTasks, canStartTask,

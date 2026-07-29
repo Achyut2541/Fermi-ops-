@@ -15,7 +15,7 @@ export default function CrisisView() {
     copiedTemplate, setCopiedTemplate,
   } = useUI();
 
-  const { projects, tasksWithStatus, delayedCount, getWorkload, capacityPct, getRecommendation } = useData();
+  const { projects, tasksWithStatus, delayedCount, getWorkload, isOverloaded, activeProjectCount, vendors, getRecommendation } = useData();
 
   const reco = showReco ? getRecommendation(crisisCategory, crisisScenario, timelineFlex, budgetFlex) : null;
   const cat = CRISIS_LIB[crisisCategory];
@@ -46,8 +46,8 @@ export default function CrisisView() {
         <div className="text-sm">
           <span className="font-medium text-indigo-800">Live context: </span>
           <span className="text-indigo-600 font-mono text-xs">
-            {projects.length} active projects &middot; {delayedCount} delayed tasks &middot;{' '}
-            {getWorkload().filter(m => capacityPct(m) >= 90).map(m => m.name).join(', ') || 'no one'} at capacity
+            {activeProjectCount} active projects &middot; {delayedCount} delayed tasks &middot;{' '}
+            {getWorkload().filter(isOverloaded).map(m => m.name).join(', ') || 'no one'} at capacity
           </span>
         </div>
       </div>
@@ -228,6 +228,12 @@ export default function CrisisView() {
               <div className="bg-green-50 border border-green-100 rounded-[5px] p-3 text-sm">
                 <span className="font-medium text-green-700">Available capacity: </span>
                 <span className="text-green-600 font-mono text-xs">{reco.available.join(', ')} have headroom and could absorb work.</span>
+              </div>
+            )}
+            {vendors.length > 0 && (
+              <div className="bg-purple-50 border border-purple-100 rounded-[5px] p-3 text-sm">
+                <span className="font-medium text-purple-700">External vendors on call: </span>
+                <span className="text-purple-600 font-mono text-xs">{vendors.map(v => (v.skill ? `${v.name} (${v.skill})` : v.name)).join(', ')}</span>
               </div>
             )}
 

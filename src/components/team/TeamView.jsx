@@ -20,11 +20,24 @@ export default function TeamView() {
     teamMembers, setTeamMembers, activeMembers,
     canEditProjects, getWorkload, capacityPct, capacityLabel,
     deactivateMember, reactivateMember,
+    vendors, addVendor, updateVendor, deleteVendor,
   } = useData();
 
   const [newMember, setNewMember] = useState({ ...EMPTY_MEMBER });
   const [confirmDeactivateId, setConfirmDeactivateId] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
+
+  // External vendor directory form state
+  const EMPTY_VENDOR = { name: '', skill: '', dayRate: '', contact: '', notes: '' };
+  const [vendorForm, setVendorForm] = useState(null);   // null = closed; object = adding/editing
+  const [confirmDeleteVendor, setConfirmDeleteVendor] = useState(null);
+
+  const saveVendor = () => {
+    if (!vendorForm?.name?.trim()) return;
+    const payload = { ...vendorForm, dayRate: vendorForm.dayRate === '' ? null : Number(vendorForm.dayRate) };
+    if (vendorForm.id) updateVendor(payload); else addVendor(payload);
+    setVendorForm(null);
+  };
 
   const archivedMembers = teamMembers.filter(m => !m.active);
 
@@ -213,6 +226,90 @@ export default function TeamView() {
           )}
         </div>
       )}
+
+      {/* External Vendors directory — separate from the internal team */}
+      <div className="pt-2">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h3 className="text-lg font-light text-stone-900 font-serif">External Vendors</h3>
+            <p className="text-xs text-stone-400 font-mono">Freelancers &amp; agencies — separate from the internal team</p>
+          </div>
+          <button
+            onClick={() => setVendorForm({ ...EMPTY_VENDOR })}
+            className="flex items-center gap-2 bg-white border border-stone-200 text-stone-700 px-3 py-2 rounded-[5px] text-xs font-mono font-medium hover:bg-stone-50 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Vendor
+          </button>
+        </div>
+
+        {vendorForm && (
+          <div className="bg-white border border-indigo-200 rounded-[6px] p-4 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input placeholder="Name / agency *" value={vendorForm.name}
+              onChange={e => setVendorForm({ ...vendorForm, name: e.target.value })}
+              className="border border-stone-200 rounded-[5px] px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none" />
+            <input placeholder="Skill (e.g. Webflow dev)" value={vendorForm.skill}
+              onChange={e => setVendorForm({ ...vendorForm, skill: e.target.value })}
+              className="border border-stone-200 rounded-[5px] px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none" />
+            <input placeholder="Day rate" type="number" value={vendorForm.dayRate ?? ''}
+              onChange={e => setVendorForm({ ...vendorForm, dayRate: e.target.value })}
+              className="border border-stone-200 rounded-[5px] px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none" />
+            <input placeholder="Contact (email / phone)" value={vendorForm.contact}
+              onChange={e => setVendorForm({ ...vendorForm, contact: e.target.value })}
+              className="border border-stone-200 rounded-[5px] px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none" />
+            <input placeholder="Notes" value={vendorForm.notes}
+              onChange={e => setVendorForm({ ...vendorForm, notes: e.target.value })}
+              className="border border-stone-200 rounded-[5px] px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none sm:col-span-2" />
+            <div className="sm:col-span-2 flex gap-2">
+              <button onClick={saveVendor} disabled={!vendorForm.name.trim()}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-[5px] text-xs font-mono font-medium uppercase tracking-wider hover:opacity-85 disabled:opacity-40 transition-opacity">
+                {vendorForm.id ? 'Save' : 'Add'}
+              </button>
+              <button onClick={() => setVendorForm(null)}
+                className="px-3 py-2 text-xs font-mono text-stone-500 hover:text-stone-800">Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {vendors.length === 0 && !vendorForm ? (
+          <div className="bg-stone-100 border border-stone-200 rounded-[6px] p-6 text-center text-sm text-stone-400">
+            No external vendors yet. Add freelancers or agencies you work with.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2">
+            {vendors.map(v => (
+              <div key={v.id} className="bg-white border border-stone-200 rounded-[6px] p-4 flex items-center gap-4">
+                <div className="w-8 h-8 rounded-[6px] bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-medium flex-shrink-0">{v.name.charAt(0)}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-sm text-stone-900">{v.name}</span>
+                    {v.skill && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-mono">{v.skill}</span>}
+                    {v.dayRate != null && v.dayRate !== '' && <span className="text-xs text-stone-400 font-mono">{v.dayRate}/day</span>}
+                  </div>
+                  {(v.contact || v.notes) && (
+                    <div className="text-xs text-stone-400 font-mono mt-0.5 truncate">{v.contact}{v.contact && v.notes ? ' · ' : ''}{v.notes}</div>
+                  )}
+                </div>
+                {confirmDeleteVendor === v.id ? (
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button onClick={() => { deleteVendor(v.id); setConfirmDeleteVendor(null); }}
+                      className="px-2.5 py-1 bg-red-600 text-white text-xs font-mono rounded-[5px] hover:opacity-85">Delete</button>
+                    <button onClick={() => setConfirmDeleteVendor(null)}
+                      className="px-2 py-1 text-xs font-mono text-stone-500">Cancel</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => setVendorForm(v)} className="p-1.5 hover:bg-stone-100 rounded-[5px] transition-colors" title="Edit vendor">
+                      <Edit2 className="w-3.5 h-3.5 text-stone-400" />
+                    </button>
+                    <button onClick={() => setConfirmDeleteVendor(v.id)}
+                      className="px-2 py-1 text-xs font-mono text-red-500 hover:bg-red-50 rounded-[5px] transition-colors">Remove</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Add/Edit Member Modal */}
       {(showAddMember || editingMember) && (
