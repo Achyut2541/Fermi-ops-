@@ -93,7 +93,9 @@ export function DataProvider({ children }) {
   // FIX P0-1: resolve currentUser from auth email once team data is loaded
   useEffect(() => {
     if (!dataLoaded || !authEmail || currentUser) return;   // resolve once per identity
-    const matched = teamMembers.find(m => m.email?.toLowerCase() === authEmail?.toLowerCase());
+    // Match on email, or fall back to id for roster entries that have no email.
+    const key = authEmail?.toLowerCase();
+    const matched = teamMembers.find(m => m.email?.toLowerCase() === key || m.id?.toLowerCase() === key);
     if (matched) setCurrentUser(matched.name);
   }, [dataLoaded, authEmail, currentUser, teamMembers, setCurrentUser]);
 

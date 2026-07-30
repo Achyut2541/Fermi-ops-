@@ -28,7 +28,9 @@ export default function NamePicker() {
     );
   }, [activeMembers, query]);
 
-  const choose = (member) => member && selectProfile(member.email);
+  // Fall back to the member id if a roster entry has no email, so a missing
+  // email can never make a profile unclickable (was: Tanisha had null email).
+  const choose = (member) => member && selectProfile(member.email || member.id);
 
   const onKeyDown = (e) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setHighlight(h => Math.min(h + 1, results.length - 1)); }
